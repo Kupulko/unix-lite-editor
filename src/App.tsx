@@ -1,0 +1,786 @@
+import React, { useEffect, useRef, useState } from "react";
+import type {
+  Artboard,
+  ArrowNode,
+  EllipseNode,
+  FrameNode,
+  ImageNode,
+  LineNode,
+  PolygonNode,
+  RectNode,
+  Scene,
+  SceneNode,
+  StarNode,
+  TextNode,
+} from "./types";
+import { v4 as uuid } from "uuid";
+import LayersPanel from "./editor/LayersPanel";
+import Editor from "./editor/Editor";
+import PropsPanel from "./editor/PropsPanel";
+import { makeDefaultScene } from "./editor/defaultScene";
+import { exportSceneAsViteReactZip } from "./export/exportProject";
+import TopBar from "./ui/TopBar";
+import BottomToolbar, { Tool } from "./ui/BottomToolbar";
+import {
+  applyAutoLayoutToScene,
+  assignNodeToFrame,
+  clamp,
+  reorderNodeRelative,
+  safeNumber,
+} from "./utils";
+
+function normalizeScene(raw: Scene): Scene {
+  return {
+    ...raw,
+    artboards: Array.isArray(raw.artboards) ? raw.artboards : [],
+    nodes: Array.isArray(raw.nodes)
+      ? raw.nodes.map((node) => {
+          const normalizedEffects = Array.isArray((node as any).effects)
+            ? (node as any).effects
+                .map((effect: any) => {
+                  if (!effect || typeof effect !== "object") return null;
+
+                  if (effect.type === "drop-shadow") {
+                    return {
+                      id: effect.id ?? uuid(),
+                      type: "drop-shadow",
+                      enabled: effect.enabled ?? true,
+                      x: typeof effect.x === "number" ? effect.x : 0,
+                      y: typeof effect.y === "number" ? effect.y : 4,
+                      blur: typeof effect.blur === "number" ? effect.blur : 4,
+                      spread: typeof effect.spread === "number" ? effect.spread : 0,
+                      color: typeof effect.color === "string" ? effect.color : "#000000",
+                      alpha: typeof effect.alpha === "number" ? effect.alpha : 0.25,
+                    };
+                  }
+
+                  if (effect.type === "inner-shadow") {
+                    return {
+                      id: effect.id ?? uuid(),
+                      type: "inner-shadow",
+                      enabled: effect.enabled ?? true,
+                      x: typeof effect.x === "number" ? effect.x : 0,
+                      y: typeof effect.y === "number" ? effect.y : 4,
+                      blur: typeof effect.blur === "number" ? effect.blur : 4,
+                      spread: typeof effect.spread === "number" ? effect.spread : 0,
+                      color: typeof effect.color === "string" ? effect.color : "#000000",
+                      alpha: typeof effect.alpha === "number" ? effect.alpha : 0.25,
+                    };
+                  }
+
+                  if (effect.type === "layer-blur") {
+                    return {
+                      id: effect.id ?? uuid(),
+                      type: "layer-blur",
+                      enabled: effect.enabled ?? true,
+                      mode: effect.mode === "progressive" ? "progressive" : "uniform",
+                      blur: typeof effect.blur === "number" ? effect.blur : 4,
+                    };
+                  }
+
+                  if (effect.type === "background-blur") {
+                    return {
+                      id: effect.id ?? uuid(),
+                      type: "background-blur",
+                      enabled: effect.enabled ?? true,
+                      mode: effect.mode === "progressive" ? "progressive" : "uniform",
+                      blur: typeof effect.blur === "number" ? effect.blur : 4,
+                    };
+                  }
+
+                  return null;
+                })
+                .filter(Boolean)
+            : [];
+
+          const parentId =
+            typeof (node as any).parentId === "string" ? (node as any).parentId : null;
+
+          if (node.type === "ellipse") {
+            const legacyArc =
+              typeof (node as any).arc === "number"
+                ? clamp((node as any).arc, 1, 360)
+                : 360;
+
+            const derivedArcPercent = Math.round((legacyArc / 360) * 100);
+
+            return {
+              ...node,
+              parentId,
+              effects: normalizedEffects,
+              arcPercent:
+                typeof (node as any).arcPercent === "number"
+                  ? clamp((node as any).arcPercent, 1, 100)
+                  : clamp(derivedArcPercent, 1, 100),
+              arcRotation:
+                typeof (node as any).arcRotation === "number"
+                  ? (node as any).arcRotation
+                  : 0,
+              holePercent:
+                typeof (node as any).holePercent === "number"
+                  ? clamp((node as any).holePercent, 0, 95)
+                  : 0,
+              centerOffsetPercent:
+                typeof (node as any).centerOffsetPercent === "number"
+                  ? clamp((node as any).centerOffsetPercent, 0, 80)
+                  : 0,
+            } as SceneNode;
+          }
+
+          if (node.type === "polygon") {
+            return {
+              ...node,
+              parentId,
+              effects: normalizedEffects,
+              sides: typeof node.sides === "number" ? clamp(node.sides, 3, 24) : 3,
+            } as SceneNode;
+          }
+
+          if (node.type === "star") {
+            const legacyInnerScale =
+              typeof (node as any).innerScale === "number"
+                ? clamp((node as any).innerScale, 0.1, 0.95)
+                : 0.45;
+
+            return {
+              ...node,
+              parentId,
+              effects: normalizedEffects,
+              points: typeof node.points === "number" ? clamp(node.points, 3, 40) : 5,
+              innerRatioPercent:
+                typeof (node as any).innerRatioPercent === "number"
+                  ? clamp((node as any).innerRatioPercent, 10, 95)
+                  : Math.round(legacyInnerScale * 100),
+            } as SceneNode;
+          }
+
+          if (node.type === "frame") {
+            return {
+              ...node,
+              parentId,
+              effects: normalizedEffects,
+              clipContent: (node as any).clipContent ?? true,
+              autoLayout: (node as any).autoLayout
+                ? {
+                    enabled: (node as any).autoLayout.enabled ?? true,
+                    direction:
+                      (node as any).autoLayout.direction === "vertical"
+                        ? "vertical"
+                        : "horizontal",
+                    gap: safeNumber((node as any).autoLayout.gap, 12),
+                    paddingX: safeNumber((node as any).autoLayout.paddingX, 16),
+                    paddingY: safeNumber((node as any).autoLayout.paddingY, 16),
+                    align:
+                      (node as any).autoLayout.align === "center" ||
+                      (node as any).autoLayout.align === "end"
+                        ? (node as any).autoLayout.align
+                        : "start",
+                    hugContent: !!(node as any).autoLayout.hugContent,
+                  }
+                : undefined,
+            } as SceneNode;
+          }
+
+          return {
+            ...node,
+            parentId,
+            effects: normalizedEffects,
+          } as SceneNode;
+        })
+      : [],
+    selection: raw.selection ?? { kind: "none" },
+  };
+}
+
+function finalizeScene(scene: Scene) {
+  return applyAutoLayoutToScene(scene);
+}
+
+function addDesktopArtboard(scene: Scene): Scene {
+  const id = uuid();
+  const index = (scene.artboards ?? []).length;
+  const x = 120 + index * 1150;
+  const y = 120;
+
+  const art: Artboard = {
+    id,
+    name: `Desktop ${index + 1}`,
+    x,
+    y,
+    width: 1440,
+    height: 900,
+    fill: "#ffffff",
+    stroke: "#cfcfcf",
+  };
+
+  return {
+    ...scene,
+    artboards: [...(scene.artboards ?? []), art],
+    selection: { kind: "artboard", id },
+  };
+}
+
+function addRectAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 260;
+  const h = 160;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: RectNode = {
+    id,
+    type: "rect",
+    artboardId,
+    parentId: null,
+    name: `Rect ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    fill: "#2c2c2c",
+    stroke: "#3a3a3a",
+    strokeWidth: 1,
+    cornerRadius: 10,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...(scene.nodes ?? []), node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addFrameAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 320;
+  const h = 220;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: FrameNode = {
+    id,
+    type: "frame",
+    artboardId,
+    parentId: null,
+    name: `Frame ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    fill: "#25282f",
+    stroke: "#4c5361",
+    strokeWidth: 1,
+    cornerRadius: 12,
+    opacity: 1,
+    rotation: 0,
+    clipContent: true,
+    autoLayout: {
+      enabled: true,
+      direction: "vertical",
+      gap: 12,
+      paddingX: 16,
+      paddingY: 16,
+      align: "start",
+      hugContent: false,
+    },
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addTextAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 320;
+  const h = 100;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: TextNode = {
+    id,
+    type: "text",
+    artboardId,
+    parentId: null,
+    name: `Text ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    text: "Text",
+    color: "#111111",
+    backgroundColor: "#ffffff",
+    fontSize: 28,
+    fontFamily: "Inter, Arial, sans-serif",
+    fontWeight: 400,
+    fontStyle: "normal",
+    align: "left",
+    wrap: "word",
+    lineHeight: 1.2,
+    letterSpacing: 0,
+    padding: 12,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addLineAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 220;
+  const h = 120;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: LineNode = {
+    id,
+    type: "line",
+    artboardId,
+    parentId: null,
+    name: `Line ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    stroke: "#e8e8e8",
+    strokeWidth: 3,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addArrowAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 240;
+  const h = 120;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: ArrowNode = {
+    id,
+    type: "arrow",
+    artboardId,
+    parentId: null,
+    name: `Arrow ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    stroke: "#e8e8e8",
+    strokeWidth: 3,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addEllipseAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const size = 180;
+  const x = clamp(worldX - size / 2, ab.x, ab.x + ab.width - size);
+  const y = clamp(worldY - size / 2, ab.y, ab.y + ab.height - size);
+
+  const id = uuid();
+  const node: EllipseNode = {
+    id,
+    type: "ellipse",
+    artboardId,
+    parentId: null,
+    name: `Ellipse ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: size,
+    height: size,
+    fill: "#2c2c2c",
+    stroke: "#3a3a3a",
+    strokeWidth: 1,
+    arcPercent: 100,
+    arcRotation: 0,
+    holePercent: 0,
+    centerOffsetPercent: 0,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addPolygonAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 180;
+  const h = 180;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: PolygonNode = {
+    id,
+    type: "polygon",
+    artboardId,
+    parentId: null,
+    name: `Polygon ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    fill: "#2c2c2c",
+    stroke: "#3a3a3a",
+    strokeWidth: 1,
+    sides: 3,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addStarAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 180;
+  const h = 180;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: StarNode = {
+    id,
+    type: "star",
+    artboardId,
+    parentId: null,
+    name: `Star ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    fill: "#2c2c2c",
+    stroke: "#3a3a3a",
+    strokeWidth: 1,
+    points: 5,
+    innerRatioPercent: 45,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+function addImageAt(scene: Scene, artboardId: string, worldX: number, worldY: number): Scene {
+  const ab = scene.artboards.find((a) => a.id === artboardId);
+  if (!ab) return scene;
+
+  const w = 260;
+  const h = 180;
+  const x = clamp(worldX - w / 2, ab.x, ab.x + ab.width - w);
+  const y = clamp(worldY - h / 2, ab.y, ab.y + ab.height - h);
+
+  const id = uuid();
+  const node: ImageNode = {
+    id,
+    type: "image",
+    artboardId,
+    parentId: null,
+    name: `Image ${(scene.nodes ?? []).length + 1}`,
+    x,
+    y,
+    width: w,
+    height: h,
+    src: "",
+    fit: "cover",
+    stroke: "#3a3a3a",
+    strokeWidth: 1,
+    opacity: 1,
+    rotation: 0,
+  };
+
+  return {
+    ...scene,
+    nodes: [...scene.nodes, node],
+    selection: { kind: "node", id },
+  };
+}
+
+export default function App() {
+  const [scene, setScene] = useState<Scene>(() => {
+    const raw = localStorage.getItem("figmaLiteScene");
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed?.artboards || !parsed?.selection) return finalizeScene(makeDefaultScene());
+        return finalizeScene(normalizeScene(parsed as Scene));
+      } catch {
+        return finalizeScene(makeDefaultScene());
+      }
+    }
+    return finalizeScene(makeDefaultScene());
+  });
+
+  const [mode, setMode] = useState<"Design" | "Prototype">("Design");
+  const [tool, setTool] = useState<Tool>("select");
+  const [zoomPct, setZoomPct] = useState(100);
+
+  const [leftW, setLeftW] = useState(
+    () => Number(localStorage.getItem("leftPanelW") ?? "280") || 280
+  );
+  const [rightW, setRightW] = useState(
+    () => Number(localStorage.getItem("rightPanelW") ?? "320") || 320
+  );
+
+  const drag = useRef<null | { which: "left" | "right"; startX: number; startLeft: number; startRight: number }>(null);
+
+  function commitScene(next: Scene | ((prev: Scene) => Scene)) {
+  setScene((prev) => (typeof next === "function" ? next(prev) : next));
+}
+
+  useEffect(() => {
+    localStorage.setItem("figmaLiteScene", JSON.stringify(scene));
+  }, [scene]);
+
+  useEffect(() => {
+    localStorage.setItem("leftPanelW", String(leftW));
+  }, [leftW]);
+
+  useEffect(() => {
+    localStorage.setItem("rightPanelW", String(rightW));
+  }, [rightW]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const key = e.key.toLowerCase();
+
+      if (key === "v") setTool("select");
+      if (key === "r") setTool("rect");
+      if (key === "t") setTool("text");
+      if (key === "l" && e.shiftKey) setTool("arrow");
+      else if (key === "l") setTool("line");
+      if (key === "o") setTool("ellipse");
+
+      if (key === "a") {
+        commitScene((s) => addDesktopArtboard(s));
+        setTool("select");
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  useEffect(() => {
+    function onMove(e: MouseEvent) {
+      if (!drag.current) return;
+
+      const d = drag.current;
+      const dx = e.clientX - d.startX;
+
+      if (d.which === "left") {
+        setLeftW(clamp(d.startLeft + dx, 200, 520));
+      } else {
+        setRightW(clamp(d.startRight - dx, 240, 560));
+      }
+    }
+
+    function onUp() {
+      drag.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    }
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, []);
+
+  function startResize(which: "left" | "right") {
+    return (e: React.MouseEvent) => {
+      e.preventDefault();
+      drag.current = {
+        which,
+        startX: e.clientX,
+        startLeft: leftW,
+        startRight: rightW,
+      };
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    };
+  }
+
+  const draggingLeft = drag.current?.which === "left";
+  const draggingRight = drag.current?.which === "right";
+
+  return (
+    <div className="appShell">
+      <TopBar
+        mode={mode}
+        onMode={setMode}
+        zoomPct={zoomPct}
+        onZoomPct={setZoomPct}
+        onExport={() => exportSceneAsViteReactZip(scene)}
+      />
+
+      <div
+        className="workspaceRow"
+        style={
+          {
+            ["--leftW" as any]: `${leftW}px`,
+            ["--rightW" as any]: `${rightW}px`,
+          } as React.CSSProperties
+        }
+      >
+        <aside className="sidePanel leftPanel">
+          <div className="panelInner">
+            <div className="h1">Layers</div>
+
+            <div className="searchRow">
+              <input placeholder="Find..." />
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+              <button className="primary" onClick={() => commitScene((s) => addDesktopArtboard(s))}>
+                + Desktop
+              </button>
+              <button className="primary" onClick={() => {
+                const selectedArtboard =
+                  scene.selection.kind === "artboard"
+                    ? scene.selection.id
+                    : scene.selection.kind === "node"
+                    ? scene.nodes.find((n) => n.id === scene.selection.id)?.artboardId
+                    : scene.artboards[0]?.id;
+
+                if (!selectedArtboard) return;
+
+                const ab = scene.artboards.find((a) => a.id === selectedArtboard);
+                if (!ab) return;
+
+                commitScene((s) =>
+                  addFrameAt(s, selectedArtboard, ab.x + ab.width / 2, ab.y + ab.height / 2)
+                );
+              }}>
+                + Frame
+              </button>
+            </div>
+
+            <div className="panelScroll">
+              <LayersPanel
+                scene={scene}
+                onSelect={(sel) => commitScene((prev) => ({ ...prev, selection: sel }))}
+                onReorder={(activeId, overId) =>
+                  commitScene((prev) => reorderNodeRelative(prev, activeId, overId))
+                }
+              />
+            </div>
+          </div>
+        </aside>
+
+        <div
+          className={`splitter ${draggingLeft ? "dragging" : ""}`}
+          onMouseDown={startResize("left")}
+        />
+
+        <main className="editorArea">
+          <div className="canvasCard">
+            <Editor
+              scene={scene}
+              onChange={commitScene}
+              tool={tool}
+              zoom={zoomPct / 100}
+              onZoom={(z) => setZoomPct(Math.round(z * 100))}
+              onAssignToFrame={(nodeId, frameId) =>
+                commitScene((prev) => assignNodeToFrame(prev, nodeId, frameId))
+              }
+              onPlace={(artboardId, worldX, worldY) => {
+                commitScene((s) => {
+                  if (tool === "rect") return addRectAt(s, artboardId, worldX, worldY);
+                  if (tool === "text") return addTextAt(s, artboardId, worldX, worldY);
+                  if (tool === "line") return addLineAt(s, artboardId, worldX, worldY);
+                  if (tool === "arrow") return addArrowAt(s, artboardId, worldX, worldY);
+                  if (tool === "ellipse") return addEllipseAt(s, artboardId, worldX, worldY);
+                  if (tool === "polygon") return addPolygonAt(s, artboardId, worldX, worldY);
+                  if (tool === "star") return addStarAt(s, artboardId, worldX, worldY);
+                  if (tool === "image") return addImageAt(s, artboardId, worldX, worldY);
+                  return s;
+                });
+
+                if (tool !== "select" && tool !== "hand") {
+                  setTool("select");
+                }
+              }}
+            />
+          </div>
+        </main>
+
+        <div
+          className={`splitter ${draggingRight ? "dragging" : ""}`}
+          onMouseDown={startResize("right")}
+        />
+
+        <aside className="sidePanel rightPanel">
+          <div className="panelInner">
+            <div className="panelScroll">
+              <PropsPanel scene={scene} onChange={commitScene} />
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <div className="bottomBarWrap">
+        <BottomToolbar tool={tool} onTool={setTool} />
+      </div>
+    </div>
+  );
+}
