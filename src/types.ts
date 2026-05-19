@@ -79,7 +79,7 @@ export type NodeEffect =
   | BackgroundBlurEffect;
 
 export type AutoLayoutDirection = "horizontal" | "vertical";
-export type AutoLayoutAlign = "start" | "center" | "end";
+export type AutoLayoutAlign = "start" | "center" | "end" | "stretch";
 
 export type AutoLayout = {
   enabled: boolean;
@@ -91,21 +91,28 @@ export type AutoLayout = {
   hugContent: boolean;
 };
 
+export type ChildLayoutProps = {
+  layoutWidth?: "fixed" | "fill";
+  layoutHeight?: "fixed" | "fill";
+  alignSelf?: "auto" | "start" | "center" | "end" | "stretch";
+  ignoreAutoLayout?: boolean;
+};
+
 export type BaseNode = {
   id: string;
   type: NodeType;
   name: string;
-
   x: number;
   y: number;
   width: number;
   height: number;
-
   rotation?: number;
   opacity?: number;
   artboardId: string;
   parentId?: string | null;
+  childLayout?: ChildLayoutProps;
   effects?: NodeEffect[];
+  hidden?: boolean;
 };
 
 export type RectNode = BaseNode & {
@@ -131,17 +138,14 @@ export type FrameNode = BaseNode & {
 export type TextNode = BaseNode & {
   type: "text";
   text: string;
-
   color: string;
   backgroundColor: string;
-
   fontSize: number;
   fontFamily: string;
   fontWeight: number;
   fontStyle: "normal" | "italic";
   align: "left" | "center" | "right";
   wrap: "word" | "char" | "none";
-
   lineHeight: number;
   letterSpacing: number;
   padding: number;
@@ -164,12 +168,10 @@ export type EllipseNode = BaseNode & {
   fill: string;
   stroke: string;
   strokeWidth: number;
-
   arcPercent: number;
   arcRotation: number;
   holePercent: number;
   centerOffsetPercent: number;
-
   fillStyle?: FillStyle;
 };
 

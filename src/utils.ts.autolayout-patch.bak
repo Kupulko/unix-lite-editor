@@ -1,0 +1,568 @@
+import type {
+  AutoLayout,
+  AutoLayoutAlign,
+  ChildLayoutProps,
+  FrameNode,
+  Scene,
+  SceneNode,
+} from "./types";
+
+export function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
+export function safeNumber(v: unknown, fallback: number) {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export function isFrameNode(node: SceneNode | null | undefined): node is FrameNode {
+  return !!node && node.type === "frame";
+}
+
+export function findNode(scene: Scene, id: string) {
+  return scene.nodes.find((n) => n.id === id) ?? null;
+}
+
+export function getNodeChildren(scene: Scene, parentId: string) {
+  return scene.nodes.filter((n) => n.parentId === parentId);
+}
+
+export function getTopLevelNodes(scene: Scene, artboardId: string) {
+  return scene.nodes.filter((n) => n.artboardId === artboardId && !n.parentId);
+}
+
+export function getSiblingNodes(scene: Scene, node: SceneNode) {
+  return scene.nodes.filter(
+    (n) =>
+      n.artboardId === node.artboardId &&
+      (n.parentId ?? null) === (node.parentId ?? null)
+  );
+}
+
+export function getSiblingIndexes(scene: Scene, node: SceneNode) {
+  const siblings = getSiblingNodes(scene, node);
+  const ids = new Set(siblings.map((n) => n.id));
+
+  return scene.nodes
+    .map((n, i) => ({ n, i }))
+    .filter(({ n }) => ids.has(n.id))
+    .map(({ i }) => i);
+}
+
+function moveIndex<T>(arr: T[], from: number, to: number) {
+  const copy = [...arr];
+  const [item] = copy.splice(from, 1);
+  copy.splice(to, 0, item);
+  return copy;
+}
+
+export function bringNodeToFront(scene: Scene, nodeId: string): Scene {
+  const node = findNode(scene, nodeId);
+  if (!node) return scene;
+
+  const siblingIndexes = getSiblingIndexes(scene, node);
+  if (siblingIndexes.length <= 1) return scene;
+
+  const from = scene.nodes.findIndex((n) => n.id === nodeId);
+  const to = siblingIndexes[siblingIndexes.length - 1];
+  if (from === -1 || from === to) return scene;
+
+  return { ...scene, nodes: moveIndex(scene.nodes, from, to) };
+}
+
+export function sendNodeToBack(scene: Scene, nodeId: string): Scene {
+  const node = findNode(scene, nodeId);
+  if (!node) return scene;
+
+  const siblingIndexes = getSiblingIndexes(scene, node);
+  if (siblingIndexes.length <= 1) return scene;
+
+  const from = scene.nodes.findIndex((n) => n.id === nodeId);
+  const to = siblingIndexes[0];
+  if (from === -1 || from === to) return scene;
+
+  return { ...scene, nodes: moveIndex(scene.nodes, from, to) };
+}
+
+export function bringNodeForward(scene: Scene, nodeId: string): Scene {
+  const node = findNode(scene, nodeId);
+  if (!node) return scene;
+
+  const siblingIndexes = getSiblingIndexes(scene, node);
+  const from = scene.nodes.findIndex((n) => n.id === nodeId);
+  const pos = siblingIndexes.indexOf(from);
+
+  if (from === -1 || pos === -1 || pos === siblingIndexes.length - 1) return scene;
+
+  return { ...scene, nodes: moveIndex(scene.nodes, from, siblingIndexes[pos + 1]) };
+}
+
+export function sendNodeBackward(scene: Scene, nodeId: string): Scene {
+  const node = findNode(scene, nodeId);
+  if (!node) return scene;
+
+  const siblingIndexes = getSiblingIndexes(scene, node);
+  const from = scene.nodes.findIndex((n) => n.id === nodeId);
+  const pos = siblingIndexes.indexOf(from);
+
+  if (from === -1 || pos <= 0) return scene;
+
+  return { ...scene, nodes: moveIndex(scene.nodes, from, siblingIndexes[pos - 1]) };
+}
+
+export function reorderNodeRelative(scene: Scene, activeId: string, overId: string): Scene {
+  if (activeId === overId) return scene;
+
+  const active = findNode(scene, activeId);
+  const over = findNode(scene, overId);
+  if (!active || !over) return scene;
+
+  if (
+    active.artboardId !== over.artboardId ||
+    (active.parentId ?? null) !== (over.parentId ?? null)
+  ) {
+    return scene;
+  }
+
+  const from = scene.nodes.findIndex((n) => n.id === activeId);
+  const to = scene.nodes.findIndex((n) => n.id === overId);
+  if (from === -1 || to === -1) return scene;
+
+  return { ...scene, nodes: moveIndex(scene.nodes, from, to) };
+}
+
+export function isDescendant(
+  scene: Scene,
+  maybeChildId: string,
+  maybeAncestorId: string
+): boolean {
+  let current = findNode(scene, maybeChildId);
+
+  while (current?.parentId) {
+    if (current.parentId === maybeAncestorId) return true;
+    current = findNode(scene, current.parentId);
+  }
+
+  return false;
+}
+
+function alignCross(
+  align: AutoLayoutAlign,
+  containerSize: number,
+  childSize: number,
+  padding: number
+) {
+  if (align === "start" || align === "stretch") return padding;
+  if (align === "center") return Math.max(padding, (containerSize - childSize) / 2);
+  return Math.max(padding, containerSize - padding - childSize);
+}
+
+function normalizeAutoLayout(layout?: AutoLayout): AutoLayout | undefined {
+  if (!layout) return undefined;
+
+  return {
+    enabled: layout.enabled ?? true,
+    direction: layout.direction === "vertical" ? "vertical" : "horizontal",
+    gap: clamp(safeNumber(layout.gap, 12), 0, 400),
+    paddingX: clamp(safeNumber(layout.paddingX, 16), 0, 400),
+    paddingY: clamp(safeNumber(layout.paddingY, 16), 0, 400),
+    align:
+      layout.align === "center" || layout.align === "end" || layout.align === "stretch"
+        ? layout.align
+        : "start",
+    hugContent: !!layout.hugContent,
+  };
+}
+
+function getChildrenOrdered(scene: Scene, parentId: string) {
+  return scene.nodes.filter((n) => n.parentId === parentId);
+}
+
+function getChildAlign(child: SceneNode, layout: AutoLayout): AutoLayoutAlign {
+  const self = child.childLayout?.alignSelf;
+  if (
+    self === "start" ||
+    self === "center" ||
+    self === "end" ||
+    self === "stretch"
+  ) {
+    return self;
+  }
+  return layout.align;
+}
+
+function patchChildSizeForCrossAxis(
+  child: SceneNode,
+  frame: FrameNode,
+  layout: AutoLayout
+): { width: number; height: number } {
+  let width = child.width;
+  let height = child.height;
+
+  if (layout.direction === "vertical") {
+    const fillWidth =
+      child.childLayout?.layoutWidth === "fill" || getChildAlign(child, layout) === "stretch";
+    if (fillWidth) {
+      width = Math.max(0, frame.width - layout.paddingX * 2);
+    }
+  } else {
+    const fillHeight =
+      child.childLayout?.layoutHeight === "fill" || getChildAlign(child, layout) === "stretch";
+    if (fillHeight) {
+      height = Math.max(0, frame.height - layout.paddingY * 2);
+    }
+  }
+
+  return { width, height };
+}
+
+function getFrameDepth(scene: Scene, frameId: string): number {
+  let depth = 0;
+  let current = findNode(scene, frameId);
+
+  while (current?.parentId) {
+    depth += 1;
+    current = findNode(scene, current.parentId);
+  }
+
+  return depth;
+}
+
+function layoutSingleFrame(scene: Scene, frameId: string): Scene {
+  const frame = findNode(scene, frameId);
+  if (!frame || frame.type !== "frame") return scene;
+
+  const layout = normalizeAutoLayout(frame.autoLayout);
+  if (!layout?.enabled) return scene;
+
+  const children = getChildrenOrdered(scene, frame.id);
+  if (children.length === 0) {
+    const nextFrame = { ...frame, autoLayout: layout } as SceneNode;
+    return {
+      ...scene,
+      nodes: scene.nodes.map((n) => (n.id === frame.id ? nextFrame : n)),
+    };
+  }
+
+  const flowChildren = children.filter((child) => !child.childLayout?.ignoreAutoLayout);
+  if (flowChildren.length === 0) {
+    const nextFrame = { ...frame, autoLayout: layout } as SceneNode;
+    return {
+      ...scene,
+      nodes: scene.nodes.map((n) => (n.id === frame.id ? nextFrame : n)),
+    };
+  }
+
+  const updated = new Map<string, Partial<SceneNode>>();
+  let cursor = 0;
+  let maxCross = 0;
+
+  for (const child of flowChildren) {
+    const sized = patchChildSizeForCrossAxis(child, frame, layout);
+    const crossAlign = getChildAlign(child, layout);
+
+    if (layout.direction === "horizontal") {
+      const nextX = frame.x + layout.paddingX + cursor;
+      const nextY =
+        frame.y + alignCross(crossAlign, frame.height, sized.height, layout.paddingY);
+
+      updated.set(child.id, {
+        x: nextX,
+        y: nextY,
+        width: sized.width,
+        height: sized.height,
+      });
+
+      cursor += sized.width + layout.gap;
+      maxCross = Math.max(maxCross, sized.height);
+    } else {
+      const nextY = frame.y + layout.paddingY + cursor;
+      const nextX =
+        frame.x + alignCross(crossAlign, frame.width, sized.width, layout.paddingX);
+
+      updated.set(child.id, {
+        x: nextX,
+        y: nextY,
+        width: sized.width,
+        height: sized.height,
+      });
+
+      cursor += sized.height + layout.gap;
+      maxCross = Math.max(maxCross, sized.width);
+    }
+  }
+
+  if (flowChildren.length > 0) {
+    cursor -= layout.gap;
+  }
+
+  let nextFrameWidth = frame.width;
+  let nextFrameHeight = frame.height;
+
+  if (layout.hugContent) {
+    if (layout.direction === "horizontal") {
+      nextFrameWidth = Math.max(40, layout.paddingX * 2 + Math.max(0, cursor));
+      nextFrameHeight = Math.max(40, layout.paddingY * 2 + maxCross);
+    } else {
+      nextFrameWidth = Math.max(40, layout.paddingX * 2 + maxCross);
+      nextFrameHeight = Math.max(40, layout.paddingY * 2 + Math.max(0, cursor));
+    }
+  }
+
+  const nextNodes = scene.nodes.map((node) => {
+    if (node.id === frame.id) {
+      return {
+        ...node,
+        autoLayout: layout,
+        width: nextFrameWidth,
+        height: nextFrameHeight,
+      } as SceneNode;
+    }
+
+    const patch = updated.get(node.id);
+    if (!patch) return node;
+
+    return { ...node, ...patch } as SceneNode;
+  });
+
+  return { ...scene, nodes: nextNodes };
+}
+
+export function applyAutoLayoutToScene(scene: Scene): Scene {
+  const nextNodes = scene.nodes.map((node) => ({ ...node })) as SceneNode[];
+  const nodesById = new Map(nextNodes.map((node) => [node.id, node]));
+
+  function getChildren(parentId: string): SceneNode[] {
+    return nextNodes.filter((node) => node.parentId === parentId);
+  }
+
+  function normalizeAutoLayout(layout?: AutoLayout): AutoLayout | undefined {
+    if (!layout) return undefined;
+
+    return {
+      enabled: layout.enabled ?? true,
+      direction: layout.direction === "vertical" ? "vertical" : "horizontal",
+      gap: clamp(safeNumber(layout.gap, 12), 0, 400),
+      paddingX: clamp(safeNumber(layout.paddingX, 16), 0, 400),
+      paddingY: clamp(safeNumber(layout.paddingY, 16), 0, 400),
+      align:
+        layout.align === "center" || layout.align === "end"
+          ? layout.align
+          : "start",
+      hugContent: !!layout.hugContent,
+    };
+  }
+
+  function alignCross(
+    align: AutoLayoutAlign,
+    containerSize: number,
+    childSize: number,
+    padding: number
+  ) {
+    if (align === "start") {
+      return padding;
+    }
+
+    if (align === "center") {
+      return Math.max(padding, (containerSize - childSize) / 2);
+    }
+
+    return Math.max(padding, containerSize - padding - childSize);
+  }
+
+  function shiftSubtree(nodeId: string, dx: number, dy: number) {
+    const node = nodesById.get(nodeId);
+    if (!node) return;
+
+    node.x += dx;
+    node.y += dy;
+
+    const children = getChildren(nodeId);
+    for (const child of children) {
+      shiftSubtree(child.id, dx, dy);
+    }
+  }
+
+  const processedFrames = new Set<string>();
+
+  function layoutFrame(frameId: string) {
+    if (processedFrames.has(frameId)) return;
+
+    const frame = nodesById.get(frameId);
+    if (!frame || frame.type !== "frame") return;
+
+    processedFrames.add(frameId);
+
+    const children = getChildren(frame.id);
+
+    // Спочатку розраховуємо вкладені frame,
+    // щоб їхній hug content уже мав правильні розміри
+    for (const child of children) {
+      if (child.type === "frame") {
+        layoutFrame(child.id);
+      }
+    }
+
+    frame.autoLayout = normalizeAutoLayout(frame.autoLayout);
+
+    if (!frame.autoLayout?.enabled || children.length === 0) {
+      return;
+    }
+
+    const layout = frame.autoLayout;
+
+    function placeChildren() {
+      let cursor = 0;
+
+      if (layout.direction === "horizontal") {
+        for (const child of children) {
+          const targetX = frame.x + layout.paddingX + cursor;
+          const targetY =
+            frame.y +
+            alignCross(layout.align, frame.height, child.height, layout.paddingY);
+
+          const dx = targetX - child.x;
+          const dy = targetY - child.y;
+
+          shiftSubtree(child.id, dx, dy);
+
+          cursor += child.width + layout.gap;
+        }
+      } else {
+        for (const child of children) {
+          const targetX =
+            frame.x +
+            alignCross(layout.align, frame.width, child.width, layout.paddingX);
+          const targetY = frame.y + layout.paddingY + cursor;
+
+          const dx = targetX - child.x;
+          const dy = targetY - child.y;
+
+          shiftSubtree(child.id, dx, dy);
+
+          cursor += child.height + layout.gap;
+        }
+      }
+    }
+
+    // Перше розміщення дітей
+    placeChildren();
+
+    // Hug content
+    if (layout.hugContent) {
+      if (layout.direction === "horizontal") {
+        const contentWidth =
+          layout.paddingX * 2 +
+          children.reduce((sum, child) => sum + child.width, 0) +
+          layout.gap * Math.max(0, children.length - 1);
+
+        const contentHeight =
+          layout.paddingY * 2 +
+          Math.max(...children.map((child) => child.height));
+
+        frame.width = Math.max(40, contentWidth);
+        frame.height = Math.max(40, contentHeight);
+      } else {
+        const contentWidth =
+          layout.paddingX * 2 +
+          Math.max(...children.map((child) => child.width));
+
+        const contentHeight =
+          layout.paddingY * 2 +
+          children.reduce((sum, child) => sum + child.height, 0) +
+          layout.gap * Math.max(0, children.length - 1);
+
+        frame.width = Math.max(40, contentWidth);
+        frame.height = Math.max(40, contentHeight);
+      }
+
+      // Після зміни розміру frame ще раз вирівнюємо дітей
+      placeChildren();
+    }
+  }
+
+  // Спочатку запускаємо layout для всіх frames
+  for (const node of nextNodes) {
+    if (node.type === "frame") {
+      layoutFrame(node.id);
+    }
+  }
+
+  return {
+    ...scene,
+    nodes: nextNodes,
+  };
+}
+
+export function layoutScene(scene: Scene): Scene {
+  return applyAutoLayoutToScene(scene);
+}
+
+export function wrapNodesInsideFrame(scene: Scene, frameId: string): Scene {
+  const frame = findNode(scene, frameId);
+  if (!frame || frame.type !== "frame") return scene;
+
+  const fx1 = frame.x;
+  const fy1 = frame.y;
+  const fx2 = frame.x + frame.width;
+  const fy2 = frame.y + frame.height;
+
+  const nextScene: Scene = {
+    ...scene,
+    nodes: scene.nodes.map((node) => {
+      if (node.id === frame.id) return node;
+      if (node.artboardId !== frame.artboardId) return node;
+      if (node.parentId === frame.id) return node;
+      if (isDescendant(scene, frame.id, node.id)) return node;
+
+      const nx1 = node.x;
+      const ny1 = node.y;
+      const nx2 = node.x + node.width;
+      const ny2 = node.y + node.height;
+
+      const fullyInside = nx1 >= fx1 && ny1 >= fy1 && nx2 <= fx2 && ny2 <= fy2;
+      if (!fullyInside) return node;
+
+      return {
+        ...node,
+        parentId: frame.id,
+      } as SceneNode;
+    }),
+  };
+
+  return applyAutoLayoutToScene(nextScene);
+}
+
+export function assignNodeToFrame(
+  scene: Scene,
+  nodeId: string,
+  frameId: string | null
+): Scene {
+  const node = findNode(scene, nodeId);
+  if (!node) return scene;
+  if (frameId === node.id) return scene;
+
+  if (frameId) {
+    const frame = findNode(scene, frameId);
+    if (!frame || frame.type !== "frame") return scene;
+    if (frame.artboardId !== node.artboardId) return scene;
+    if (isDescendant(scene, frameId, node.id)) return scene;
+
+    return applyAutoLayoutToScene({
+      ...scene,
+      nodes: scene.nodes.map((n) =>
+        n.id === nodeId
+          ? ({ ...n, parentId: frameId, artboardId: frame.artboardId } as SceneNode)
+          : n
+      ),
+    });
+  }
+
+  return applyAutoLayoutToScene({
+    ...scene,
+    nodes: scene.nodes.map((n) =>
+      n.id === nodeId ? ({ ...n, parentId: null } as SceneNode) : n
+    ),
+  });
+}

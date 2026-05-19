@@ -29,10 +29,7 @@ import {
   bringNodeForward,
   bringNodeToFront,
   clamp,
-  createAutoLayoutFrameFromDrop,
-  findAutoLayoutDropCandidate,
   getTopLevelNodes,
-  insertNodeIntoAutoLayoutFrame,
   sendNodeBackward,
   sendNodeToBack,
 } from "../utils";
@@ -49,28 +46,6 @@ type Props = {
 };
 
 const ACCENT = "#2CA2CA";
-
-type ResizePreview = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-const ALIGN_GUIDE_COLOR = "#ff4d3d";
-const ALIGN_GUIDE_PIXEL_THRESHOLD = 6;
-
-type AlignmentGuide = {
-  orientation: "vertical" | "horizontal";
-  position: number;
-  from: number;
-  to: number;
-};
-
-type SnapResult = {
-  x: number;
-  y: number;
-  guides: AlignmentGuide[];
-};
 
 function degToRad(deg: number) {
   return (deg * Math.PI) / 180;
@@ -757,174 +732,6 @@ function isPointInsideNode(node: SceneNode, x: number, y: number) {
   return x >= node.x && x <= node.x + node.width && y >= node.y && y <= node.y + node.height;
 }
 
-function getBounds(
-  node: Pick<SceneNode, "x" | "y" | "width" | "height">,
-  x = node.x,
-  y = node.y
-) {
-  return {
-    left: x,
-    right: x + node.width,
-    centerX: x + node.width / 2,
-    top: y,
-    bottom: y + node.height,
-    centerY: y + node.height / 2,
-  };
-}
-
-function getAlignmentSnap(
-  scene: Scene,
-  movingNode: SceneNode,
-  artboard: { x: number; y: number; width: number; height: number },
-  rawX: number,
-  rawY: number,
-  zoom: number
-): SnapResult {
-  const threshold = ALIGN_GUIDE_PIXEL_THRESHOLD / Math.max(zoom, 0.25);
-
-  const moving = getBounds(movingNode, rawX, rawY);
-
-  let bestX:
-    | {
-        delta: number;
-        guide: AlignmentGuide;
-      }
-    | undefined;
-
-  let bestY:
-    | {
-        delta: number;
-        guide: AlignmentGuide;
-      }
-    | undefined;
-
-  const movingXAnchors = [
-    moving.left,
-    moving.centerX,
-    moving.right,
-  ];
-
-  const movingYAnchors = [
-    moving.top,
-    moving.centerY,
-    moving.bottom,
-  ];
-
-  function considerX(
-    targetX: number,
-    guideFrom: number,
-    guideTo: number
-  ) {
-    for (const anchor of movingXAnchors) {
-      const delta = targetX - anchor;
-
-      if (Math.abs(delta) > threshold) continue;
-
-      if (!bestX || Math.abs(delta) < Math.abs(bestX.delta)) {
-        bestX = {
-          delta,
-          guide: {
-            orientation: "vertical",
-            position: targetX,
-            from: guideFrom,
-            to: guideTo,
-          },
-        };
-      }
-    }
-  }
-
-  function considerY(
-    targetY: number,
-    guideFrom: number,
-    guideTo: number
-  ) {
-    for (const anchor of movingYAnchors) {
-      const delta = targetY - anchor;
-
-      if (Math.abs(delta) > threshold) continue;
-
-      if (!bestY || Math.abs(delta) < Math.abs(bestY.delta)) {
-        bestY = {
-          delta,
-          guide: {
-            orientation: "horizontal",
-            position: targetY,
-            from: guideFrom,
-            to: guideTo,
-          },
-        };
-      }
-    }
-  }
-
-  // ─────────────────────────────────────────────
-  // Desktop / Artboard guides
-  // ─────────────────────────────────────────────
-
-  const artboardCenterX = artboard.x + artboard.width / 2;
-  const artboardCenterY = artboard.y + artboard.height / 2;
-
-  considerX(artboard.x, artboard.y, artboard.y + artboard.height);
-  considerX(artboardCenterX, artboard.y, artboard.y + artboard.height);
-  considerX(
-    artboard.x + artboard.width,
-    artboard.y,
-    artboard.y + artboard.height
-  );
-
-  considerY(artboard.y, artboard.x, artboard.x + artboard.width);
-  considerY(artboardCenterY, artboard.x, artboard.x + artboard.width);
-  considerY(
-    artboard.y + artboard.height,
-    artboard.x,
-    artboard.x + artboard.width
-  );
-
-  // ─────────────────────────────────────────────
-  // Other nodes guides
-  // ─────────────────────────────────────────────
-
-  const otherNodes = scene.nodes.filter((node) => {
-    if (node.id === movingNode.id) return false;
-    if (node.artboardId !== movingNode.artboardId) return false;
-    if ((node.parentId ?? null) !== (movingNode.parentId ?? null)) return false;
-    if ((node as any).hidden) return false;
-
-    return true;
-  });
-
-  for (const other of otherNodes) {
-    const b = getBounds(other);
-
-    const verticalFrom = Math.min(moving.top, b.top) - 4;
-    const verticalTo = Math.max(moving.bottom, b.bottom) + 4;
-
-    considerX(b.left, verticalFrom, verticalTo);
-    considerX(b.centerX, verticalFrom, verticalTo);
-    considerX(b.right, verticalFrom, verticalTo);
-
-    const horizontalFrom = Math.min(moving.left, b.left) - 4;
-    const horizontalTo = Math.max(moving.right, b.right) + 4;
-
-    considerY(b.top, horizontalFrom, horizontalTo);
-    considerY(b.centerY, horizontalFrom, horizontalTo);
-    considerY(b.bottom, horizontalFrom, horizontalTo);
-  }
-
-  const snappedX = rawX + (bestX?.delta ?? 0);
-  const snappedY = rawY + (bestY?.delta ?? 0);
-
-  return {
-    x: snappedX,
-    y: snappedY,
-    guides: [
-      ...(bestX ? [bestX.guide] : []),
-      ...(bestY ? [bestY.guide] : []),
-    ],
-  };
-}
-
 export default function Editor({
   scene,
   onChange,
@@ -965,43 +772,9 @@ export default function Editor({
     nodeId: string;
   }>(null);
 
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-
-  const [autoLayoutPreview, setAutoLayoutPreview] =
-  useState<ReturnType<typeof findAutoLayoutDropCandidate>>(null);
-
-  const [resizePreview, setResizePreview] =
-  useState<ResizePreview | null>(null);
-  
-  const [dragSizePreview, setDragSizePreview] =
-  useState<ResizePreview | null>(null);
-
-  const [alignmentGuides, setAlignmentGuides] = useState<AlignmentGuide[]>([]);
-
   const artboards = scene.artboards ?? [];
   const nodes = scene.nodes ?? [];
   const selection = scene.selection ?? { kind: "none" as const };
-
-  const selectedSizePreview: ResizePreview | null =
-  selection.kind === "node"
-    ? (() => {
-        const selectedNode = nodes.find((n) => n.id === selection.id);
-
-        if (!selectedNode || selectedNode.hidden) {
-          return null;
-        }
-
-        return {
-          x: selectedNode.x,
-          y: selectedNode.y,
-          width: selectedNode.width,
-          height: selectedNode.height,
-        };
-      })()
-    : null;
-
-const visibleSizePreview =
-  resizePreview ?? dragSizePreview ?? selectedSizePreview;
 
   const childrenMap = useMemo(() => {
     const map = new Map<string | null, SceneNode[]>();
@@ -1040,38 +813,7 @@ const visibleSizePreview =
     c.focus();
     canvasActiveRef.current = true;
   }
-function updateResizePreviewFromTransformer() {
-  const stage = stageRef.current;
-  const transformer = trRef.current;
 
-  if (!stage || !transformer) return;
-  if (selection.kind !== "node") return;
-
-  const selectedNode = nodes.find((n) => n.id === selection.id);
-  const target = nodeRefs.current[selection.id] as Konva.Group | null;
-
-  if (!selectedNode || !target) return;
-
-  const scaleX = target.scaleX();
-  const scaleY = target.scaleY();
-
-  const isTextNode = selectedNode.type === "text";
-
-  const previewWidth = clamp(selectedNode.width * scaleX, 10, 5000);
-  const previewHeight = isTextNode
-    ? clamp(selectedNode.height * scaleY, 24, 5000)
-    : clamp(selectedNode.height * scaleY, 10, 5000);
-
-  // Позиція відносно Stage без впливу zoom
-  const absolutePosition = target.getAbsolutePosition(stage);
-
-  setResizePreview({
-    x: absolutePosition.x,
-    y: absolutePosition.y,
-    width: previewWidth,
-    height: previewHeight,
-  });
-}
   function setSelection(sel: Scene["selection"]) {
     onChange({ ...scene, selection: sel });
   }
@@ -1306,13 +1048,8 @@ function updateResizePreviewFromTransformer() {
  function renderNode(
   node: SceneNode,
   ab: { x: number; y: number; width: number; height: number },
-  visited = new Set<string>(),
-  parentWorldX = ab.x,
-  parentWorldY = ab.y
+  visited = new Set<string>()
 ): React.ReactNode {
-    if (node.hidden) {
-    return null;
-  }
   if (visited.has(node.id)) {
     return null;
   }
@@ -1320,8 +1057,8 @@ function updateResizePreviewFromTransformer() {
   const nextVisited = new Set(visited);
   nextVisited.add(node.id);
 
-  const localX = node.x - parentWorldX;
-const localY = node.y - parentWorldY;
+  const localX = node.x - ab.x;
+  const localY = node.y - ab.y;
   const isNodeSelected = selection.kind === "node" && selection.id === node.id;
   const dropShadowProps = getDropShadowProps(node);
   const innerShadowEffect = getInnerShadowEffect(node);
@@ -1502,7 +1239,7 @@ const localY = node.y - parentWorldY;
       y={localY}
       rotation={node.rotation ?? 0}
       opacity={node.opacity ?? 1}
-      draggable={tool === "select" && !isSpaceDown.current}
+      draggable={tool === "select" && !(isSpaceDown.current || tool === "hand")}
       dragDistance={0}
       onPointerDown={(e: any) => {
         stopBubble(e);
@@ -1522,339 +1259,71 @@ const localY = node.y - parentWorldY;
         setSelection({ kind: "node", id: node.id });
         setContextMenu(null);
       }}
+      onDragStart={(e: any) => {
+        stopBubble(e);
+        setContextMenu(null);
+      }}
+      onDragMove={(e: any) => {
+        stopBubble(e);
+      }}
+      onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
+        const t = e.target as Konva.Group;
 
-      onMouseEnter={() => {
-  setHoveredNodeId(node.id);
-}}
-onMouseLeave={() => {
-  setHoveredNodeId((current) =>
-    current === node.id ? null : current
-  );
-}}
-     
-onDragMove={(e: any) => {
-  if (e.target !== e.currentTarget) {
-    stopBubble(e);
-    return;
-  }
+        const worldX = ab.x + t.x();
+        const worldY = ab.y + t.y();
 
-  stopBubble(e);
+        onChange({
+          ...scene,
+          nodes: nodes.map((n) =>
+            n.id === node.id
+              ? ({
+                  ...n,
+                  x: worldX,
+                  y: worldY,
+                } as SceneNode)
+              : n
+          ),
+        });
+      }}
+      onTransformStart={(e: any) => {
+        stopBubble(e);
+      }}
+      onTransformEnd={(e: Konva.KonvaEventObject<Event>) => {
+        const target = e.target as Konva.Group;
+        const scaleX = target.scaleX();
+        const scaleY = target.scaleY();
 
-  const t = e.currentTarget as Konva.Group;
-  const worldX = parentWorldX + t.x();
-  const worldY = parentWorldY + t.y();
+        target.scaleX(1);
+        target.scaleY(1);
 
-  const parentAutoLayoutFrame = node.parentId
-    ? nodes.find(
-        (n): n is FrameNode =>
-          n.type === "frame" &&
-          n.id === node.parentId &&
-          n.autoLayout?.enabled === true
-      )
-    : undefined;
+        const isTextNode = node.type === "text";
 
-  // Якщо блок є елементом Auto Layout
-  if (parentAutoLayoutFrame) {
-    const centerX = worldX + node.width / 2;
-    const centerY = worldY + node.height / 2;
+        const newW = clamp(node.width * scaleX, 10, 5000);
+        const newH = isTextNode
+          ? clamp(node.height * scaleY, 24, 5000)
+          : clamp(node.height * scaleY, 10, 5000);
 
-    const isOutsideParent =
-      centerX < parentAutoLayoutFrame.x ||
-      centerX > parentAutoLayoutFrame.x + parentAutoLayoutFrame.width ||
-      centerY < parentAutoLayoutFrame.y ||
-      centerY > parentAutoLayoutFrame.y + parentAutoLayoutFrame.height;
-
-    // Поки блок усередині layout — не дозволяємо йому рухатися
-    if (!isOutsideParent) {
-      t.position({
-        x: localX,
-        y: localY,
-      });
-
-      setAlignmentGuides([]);
-      setAutoLayoutPreview(null);
-      return;
-    }
-
-    // Якщо вже витягнули за межі — дозволяємо тягнути назовні
-    setAlignmentGuides([]);
-    setAutoLayoutPreview(null);
-    return;
-  }
-
-  // Звичайна логіка для об'єктів поза Auto Layout
-  // Звичайна логіка для об'єктів поза Auto Layout
-const snap = getAlignmentSnap(
-  scene,
-  node,
-  ab,
-  worldX,
-  worldY,
-  zoom
-);
-setDragSizePreview({
-  x: snap.x,
-  y: snap.y,
-  width: node.width,
-  height: node.height,
-});
-
-t.position({
-  x: snap.x - parentWorldX,
-  y: snap.y - parentWorldY,
-});
-
-t.getLayer()?.batchDraw();
-
-setAlignmentGuides(snap.guides);
-
-setAutoLayoutPreview(
-  findAutoLayoutDropCandidate(scene, node.id, snap.x, snap.y)
-);
-}}
-onDragStart={(e: any) => {
-  if (e.target !== e.currentTarget) {
-    stopBubble(e);
-    return;
-  }
-
-  stopBubble(e);
-  setContextMenu(null);
-  setAutoLayoutPreview(null);
-  setDragSizePreview({
-  x: node.x,
-  y: node.y,
-  width: node.width,
-  height: node.height,
-});
-  setAlignmentGuides([]);
-}}
-
-onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
-  if (e.target !== e.currentTarget) {
-    stopBubble(e);
-    setAlignmentGuides([]);
-    setDragSizePreview(null);
-    return;
-  }
-
-  stopBubble(e);
-
-  const t = e.currentTarget as Konva.Group;
-  const worldX = parentWorldX + t.x();
-  const worldY = parentWorldY + t.y();
-
-  const parentAutoLayoutFrame = node.parentId
-    ? nodes.find(
-        (n): n is FrameNode =>
-          n.type === "frame" &&
-          n.id === node.parentId &&
-          n.autoLayout?.enabled === true
-      )
-    : undefined;
-
-  // ─────────────────────────────────────────────
-  // Блок був усередині Auto Layout
-  // ─────────────────────────────────────────────
-  if (parentAutoLayoutFrame) {
-    const centerX = worldX + node.width / 2;
-    const centerY = worldY + node.height / 2;
-
-    const isOutsideParent =
-      centerX < parentAutoLayoutFrame.x ||
-      centerX > parentAutoLayoutFrame.x + parentAutoLayoutFrame.width ||
-      centerY < parentAutoLayoutFrame.y ||
-      centerY > parentAutoLayoutFrame.y + parentAutoLayoutFrame.height;
-
-    // Якщо витягнули за межі Auto Layout — від’єднуємо блок
-    if (isOutsideParent) {
-      onChange({
-        ...scene,
-        nodes: nodes.map((n) =>
-          n.id === node.id
-            ? ({
-                ...n,
-                x: worldX,
-                y: worldY,
-                parentId: parentAutoLayoutFrame.parentId ?? null,
-              } as SceneNode)
-            : n
-        ),
-        selection: { kind: "node", id: node.id },
-      });
-
-      setDragSizePreview({
-  x: worldX,
-  y: worldY,
-  width: node.width,
-  height: node.height,
-});
-
-      setAutoLayoutPreview(null);
-      return;
-    }
-
-    // Якщо відпустили всередині layout —
-    // просто повертаємо блок назад на його штатну позицію
-    t.position({
-      x: localX,
-      y: localY,
-    });
-
-    t.getLayer()?.batchDraw();
-
-    setAutoLayoutPreview(null);
-    return;
-  }
-
-  // ─────────────────────────────────────────────
-  // Звичайний блок поза Auto Layout
-  // ─────────────────────────────────────────────
-  const movedScene: Scene = {
-    ...scene,
-    nodes: nodes.map((n) =>
-      n.id === node.id
-        ? ({
-            ...n,
-            x: worldX,
-            y: worldY,
-          } as SceneNode)
-        : n
-    ),
-  };
-
-  const candidate =
-    findAutoLayoutDropCandidate(movedScene, node.id, worldX, worldY) ??
-    autoLayoutPreview;
-
-  if (candidate?.kind === "merge") {
-    onChange(
-      createAutoLayoutFrameFromDrop(
-        movedScene,
-        candidate.draggedId,
-        candidate.targetId,
-        candidate.direction,
-        candidate.side
-      )
-    );
-  } else if (candidate?.kind === "insert") {
-    onChange(
-      insertNodeIntoAutoLayoutFrame(
-        movedScene,
-        candidate.draggedId,
-        candidate.frameId,
-        candidate.insertIndex
-      )
-    );
-  } else {
-    onChange(movedScene);
-  }
-
-  setAutoLayoutPreview(null);
-}}
-
-     onTransformStart={(e: any) => {
-  stopBubble(e);
-
-  const target = e.target as Konva.Group;
-
-  setResizePreview({
-    x: parentWorldX + target.x(),
-    y: parentWorldY + target.y(),
-    width: node.width,
-    height: node.height,
-  });
-}}
-onTransform={(e: Konva.KonvaEventObject<Event>) => {
-  const target = e.target as Konva.Group;
-  const scaleX = target.scaleX();
-  const scaleY = target.scaleY();
-
-  const isTextNode = node.type === "text";
-
-  const previewW = clamp(node.width * scaleX, 10, 5000);
-  const previewH = isTextNode
-    ? clamp(node.height * scaleY, 24, 5000)
-    : clamp(node.height * scaleY, 10, 5000);
-
-  setResizePreview({
-    x: parentWorldX + target.x(),
-    y: parentWorldY + target.y(),
-    width: previewW,
-    height: previewH,
-  });
-}}
-onTransformEnd={(e: Konva.KonvaEventObject<Event>) => {
-  const target = e.target as Konva.Group;
-  const scaleX = target.scaleX();
-  const scaleY = target.scaleY();
-
-  target.scaleX(1);
-  target.scaleY(1);
-
-  const isTextNode = node.type === "text";
-
-  const newW = clamp(node.width * scaleX, 10, 5000);
-  const newH = isTextNode
-    ? clamp(node.height * scaleY, 24, 5000)
-    : clamp(node.height * scaleY, 10, 5000);
-
-  onChange({
-    ...scene,
-    nodes: nodes.map((n) =>
-      n.id === node.id
-        ? ({
-            ...n,
-            x: parentWorldX + target.x(),
-            y: parentWorldY + target.y(),
-            width: newW,
-            height: newH,
-            rotation: target.rotation(),
-          } as SceneNode)
-        : n
-    ),
-  });
-
-  setResizePreview(null);
-}}
+        onChange({
+          ...scene,
+          nodes: nodes.map((n) =>
+            n.id === node.id
+              ? ({
+                  ...n,
+                  x: ab.x + target.x(),
+                  y: ab.y + target.y(),
+                  width: newW,
+                  height: newH,
+                  rotation: target.rotation(),
+                } as SceneNode)
+              : n
+          ),
+        });
+      }}
       ref={(ref: any) => {
         nodeRefs.current[node.id] = ref;
       }}
-        >
+    >
       {content}
-
-            {hoveredNodeId === node.id && !isNodeSelected && (
-        <Rect
-          x={0}
-          y={0}
-          width={Math.max(node.width, 8)}
-          height={Math.max(node.height, 8)}
-          stroke={ACCENT}
-          strokeWidth={1}
-          listening={false}
-        />
-      )}
-
-      {node.type === "frame" && children.length > 0 && (
-        node.clipContent === false ? (
-          <>
-            {children.map((child) =>
-              renderNode(child, ab, nextVisited, node.x, node.y)
-            )}
-          </>
-        ) : (
-          <Group
-            clipX={0}
-            clipY={0}
-            clipWidth={node.width}
-            clipHeight={node.height}
-          >
-            {children.map((child) =>
-              renderNode(child, ab, nextVisited, node.x, node.y)
-            )}
-          </Group>
-        )
-      )}
     </Group>
   );
 }
@@ -1866,7 +1335,7 @@ onTransformEnd={(e: Konva.KonvaEventObject<Event>) => {
         width={size.w}
         height={size.h}
         tabIndex={0}
-        style={{ outline: "none", background: "transparent", touchAction: "none" as any }}
+        style={{ outline: "none", background: "#1e1e1e", touchAction: "none" as any }}
         scaleX={zoom}
         scaleY={zoom}
         onWheel={handleWheel}
@@ -1882,7 +1351,7 @@ onTransformEnd={(e: Konva.KonvaEventObject<Event>) => {
 
             const canDragSelectedArtboard =
               tool === "select" &&
-              !(!isSpaceDown.current) &&
+              !(isSpaceDown.current || tool === "hand") &&
               selection.kind === "artboard" &&
               selection.id === ab.id;
 
@@ -2026,189 +1495,25 @@ onTransformEnd={(e: Konva.KonvaEventObject<Event>) => {
             );
           })}
 
-          {autoLayoutPreview && (
-  <>
-    <Rect
-      x={autoLayoutPreview.previewRect.x}
-      y={autoLayoutPreview.previewRect.y}
-      width={autoLayoutPreview.previewRect.width}
-      height={autoLayoutPreview.previewRect.height}
-      stroke={ACCENT}
-      strokeWidth={2}
-      dash={[8, 5]}
-      cornerRadius={12}
-      listening={false}
-    />
-
-    <Line
-      points={[
-        autoLayoutPreview.insertLine.x1,
-        autoLayoutPreview.insertLine.y1,
-        autoLayoutPreview.insertLine.x2,
-        autoLayoutPreview.insertLine.y2,
-      ]}
-      stroke={ACCENT}
-      strokeWidth={3}
-      lineCap="round"
-      listening={false}
-    />
-  </>
-)}
-{alignmentGuides.map((guide, index) =>
-  guide.orientation === "vertical" ? (
-    <Line
-      key={`guide-v-${index}`}
-      points={[
-        guide.position,
-        guide.from,
-        guide.position,
-        guide.to,
-      ]}
-      stroke={ALIGN_GUIDE_COLOR}
-      strokeWidth={1}
-      listening={false}
-    />
-  ) : (
-    <Line
-      key={`guide-h-${index}`}
-      points={[
-        guide.from,
-        guide.position,
-        guide.to,
-        guide.position,
-      ]}
-      stroke={ALIGN_GUIDE_COLOR}
-      strokeWidth={1}
-      listening={false}
-    />
-  )
-)}
-
-{visibleSizePreview && (() => {
-  const label = `${Math.round(visibleSizePreview.width)} × ${Math.round(
-    visibleSizePreview.height
-  )}`;
-
-  const boxWidth = Math.max(72, label.length * 7 + 16);
-  const boxHeight = 24;
-
-  const boxX =
-    visibleSizePreview.x +
-    visibleSizePreview.width / 2 -
-    boxWidth / 2;
-
-  const boxY =
-    visibleSizePreview.y +
-    visibleSizePreview.height +
-    10;
-
-  return (
-    <Group listening={false}>
-      <Rect
-        x={boxX}
-        y={boxY}
-        width={boxWidth}
-        height={boxHeight}
-       fill="#2b61ff"
-        cornerRadius={2}
-      />
-
-      <Text
-        x={boxX}
-        y={boxY + 5}
-        width={boxWidth}
-        text={label}
-        align="center"
-        fill="#ffffff"
-        fontSize={13}
-        fontStyle="bold"
-      />
-    </Group>
-  );
-})()}
-
           <Transformer
-  ref={(r) => (trRef.current = r)}
-    onTransformStart={() => {
-    updateResizePreviewFromTransformer();
-  }}
-  onTransform={() => {
-    updateResizePreviewFromTransformer();
-  }}
-  onTransformEnd={() => {
-    setResizePreview(null);
-  }}
-  rotateEnabled={selection.kind === "node"}
-  enabledAnchors={[
-    "top-left",
-    "top-center",
-    "top-right",
-    "middle-left",
-    "middle-right",
-    "bottom-left",
-    "bottom-center",
-    "bottom-right",
-  ]}
-  borderStroke={ACCENT}
-  borderStrokeWidth={1}
-  borderDash={[]}
-  padding={2}
-  anchorSize={7}
-  anchorCornerRadius={2}
-  anchorStroke={ACCENT}
-  anchorStrokeWidth={1}
-  anchorFill="#ffffff"
-  rotateAnchorOffset={22}
-  anchorStyleFunc={(anchor) => {
-    const isTopCenter = anchor.hasName("top-center");
-    const isBottomCenter = anchor.hasName("bottom-center");
-    const isMiddleLeft = anchor.hasName("middle-left");
-    const isMiddleRight = anchor.hasName("middle-right");
-
-    // Верхня та нижня ручки — горизонтальні "полосочки"
-    if (isTopCenter || isBottomCenter) {
-      anchor.width(18);
-      anchor.height(6);
-      anchor.offsetX(9);
-      anchor.offsetY(3);
-      anchor.cornerRadius(3);
-      anchor.fill("#ffffff");
-      anchor.stroke(ACCENT);
-      anchor.strokeWidth(1);
-      return;
-    }
-
-    // Ліва та права ручки — вертикальні "полосочки"
-    if (isMiddleLeft || isMiddleRight) {
-      anchor.width(6);
-      anchor.height(18);
-      anchor.offsetX(3);
-      anchor.offsetY(9);
-      anchor.cornerRadius(3);
-      anchor.fill("#ffffff");
-      anchor.stroke(ACCENT);
-      anchor.strokeWidth(1);
-      return;
-    }
-
-    // Кутові ручки — маленькі квадрати
-    anchor.width(8);
-    anchor.height(8);
-    anchor.offsetX(4);
-    anchor.offsetY(4);
-    anchor.cornerRadius(1);
-    anchor.fill("#ffffff");
-    anchor.stroke(ACCENT);
-    anchor.strokeWidth(1.5);
-  }}
-  boundBoxFunc={(oldBox, newBox) => {
-    if (newBox.width < 10 || newBox.height < 10) {
-      return oldBox;
-    }
-
-    return newBox;
-  }}
-/>
+            ref={(r) => (trRef.current = r)}
+            rotateEnabled={selection.kind === "node"}
+            enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
+            borderStroke={ACCENT}
+            borderStrokeWidth={1}
+            borderDash={[]}
+            padding={2}
+            anchorSize={7}
+            anchorCornerRadius={2}
+            anchorStroke={ACCENT}
+            anchorStrokeWidth={1}
+            anchorFill="#1e1e1e"
+            rotateAnchorOffset={22}
+            boundBoxFunc={(oldBox, newBox) => {
+              if (newBox.width < 10 || newBox.height < 10) return oldBox;
+              return newBox;
+            }}
+          />
         </Layer>
       </Stage>
 
