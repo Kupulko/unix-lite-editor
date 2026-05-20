@@ -98,6 +98,41 @@ export type ChildLayoutProps = {
   ignoreAutoLayout?: boolean;
 };
 
+export type ExportSemanticRole =
+  | "header"
+  | "navigation"
+  | "nav-link"
+  | "button"
+  | "hero"
+  | "card"
+  | "input-field"
+  | "footer"
+  | "sidebar"
+  | "section";
+
+export type ExportSemanticTag =
+  | "header"
+  | "nav"
+  | "a"
+  | "button"
+  | "section"
+  | "article"
+  | "input"
+  | "footer"
+  | "aside"
+  | "div"
+  | "h1"
+  | "h2"
+  | "p"
+  | "span";
+
+export type ExportMeta = {
+  role?: ExportSemanticRole;
+  tag?: ExportSemanticTag;
+  component?: string;
+  exportAsComponent?: boolean;
+};
+
 export type BaseNode = {
   id: string;
   type: NodeType;
@@ -113,6 +148,7 @@ export type BaseNode = {
   childLayout?: ChildLayoutProps;
   effects?: NodeEffect[];
   hidden?: boolean;
+  exportMeta?: ExportMeta;
 };
 
 export type RectNode = BaseNode & {

@@ -12,6 +12,7 @@ import type {
   SolidFillStyle,
 } from "../types";
 import { clamp, findNode, isDescendant, isFrameNode, safeNumber } from "../utils";
+import FontPickerPopover, { getFontLabel } from "../ui/FontPickerPopover";
 
 type Props = {
   scene: Scene;
@@ -20,15 +21,24 @@ type Props = {
 
 function getSelected(
   scene: Scene
-): { kind: "none" } | { kind: "artboard"; item: Artboard } | { kind: "node"; item: SceneNode } {
-  if (scene.selection.kind === "artboard") {
-    const ab = scene.artboards.find((a) => a.id === scene.selection.id);
-    return ab ? { kind: "artboard", item: ab } : { kind: "none" };
+):
+  | { kind: "none" }
+  | { kind: "artboard"; item: Artboard }
+  | { kind: "node"; item: SceneNode } {
+  const selection = scene.selection;
+
+  if (selection.kind === "artboard") {
+    const selectedId = selection.id;
+    const artboard = scene.artboards.find((a) => a.id === selectedId);
+    return artboard ? { kind: "artboard", item: artboard } : { kind: "none" };
   }
-  if (scene.selection.kind === "node") {
-    const n = scene.nodes.find((x) => x.id === scene.selection.id);
-    return n ? { kind: "node", item: n } : { kind: "none" };
+
+  if (selection.kind === "node") {
+    const selectedId = selection.id;
+    const node = scene.nodes.find((x) => x.id === selectedId);
+    return node ? { kind: "node", item: node } : { kind: "none" };
   }
+
   return { kind: "none" };
 }
 
@@ -1018,6 +1028,104 @@ function getDefaultAutoLayout(): AutoLayout {
   };
 }
 
+function estimateTextNodeHeight(
+  item: Extract<SceneNode, { type: "text" }>,
+  overrides: Partial<Extract<SceneNode, { type: "text" }>> = {}
+) {
+  const text = String(overrides.text ?? item.text ?? "");
+  const fontSize = clamp(Number(overrides.fontSize ?? item.fontSize ?? 16), 8, 300);
+  const fontWeight = Number(overrides.fontWeight ?? item.fontWeight ?? 400);
+  const fontStyle = overrides.fontStyle ?? item.fontStyle ?? "normal";
+  const fontFamily = overrides.fontFamily ?? item.fontFamily ?? "Inter, Arial, sans-serif";
+  const lineHeight = clamp(Number(overrides.lineHeight ?? item.lineHeight ?? 1.2), 0.5, 4);
+  const padding = clamp(Number(overrides.padding ?? item.padding ?? 12), 0, 100);
+  const wrap = overrides.wrap ?? item.wrap ?? "word";
+  const letterSpacing = Number(overrides.letterSpacing ?? item.letterSpacing ?? 0);
+  const width = Math.max(24, Number(overrides.width ?? item.width ?? 180));
+  const availableWidth = Math.max(12, width - padding * 2);
+
+  if (typeof document === "undefined") {
+    return clamp(Math.ceil(fontSize * lineHeight + padding * 2 + 4), 24, 5000);
+  }
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    return clamp(Math.ceil(fontSize * lineHeight + padding * 2 + 4), 24, 5000);
+  }
+
+  ctx.font = `${fontStyle === "italic" ? "italic " : ""}${fontWeight} ${fontSize}px ${fontFamily}`;
+
+  const measure = (value: string) => {
+    const base = ctx.measureText(value).width;
+    return base + Math.max(0, value.length - 1) * letterSpacing;
+  };
+
+  const paragraphs = text.split(/\r?\n/);
+  let lines = 0;
+
+  for (const paragraph of paragraphs) {
+    if (!paragraph) {
+      lines += 1;
+      continue;
+    }
+
+    if (wrap === "none") {
+      lines += 1;
+      continue;
+    }
+
+    if (wrap === "char") {
+      let current = "";
+      for (const char of Array.from(paragraph)) {
+        const candidate = `${current}${char}`;
+        if (current && measure(candidate) > availableWidth) {
+          lines += 1;
+          current = char;
+        } else {
+          current = candidate;
+        }
+      }
+      if (current) lines += 1;
+      continue;
+    }
+
+    const words = paragraph.split(/(\s+)/).filter(Boolean);
+    let current = "";
+
+    for (const word of words) {
+      const candidate = current ? `${current}${word}` : word;
+      if (current && measure(candidate) > availableWidth) {
+        lines += 1;
+        current = word.trimStart();
+      } else {
+        current = candidate;
+      }
+
+      if (measure(current) > availableWidth) {
+        const chars = Array.from(current);
+        let chunk = "";
+        for (const char of chars) {
+          const chunkCandidate = `${chunk}${char}`;
+          if (chunk && measure(chunkCandidate) > availableWidth) {
+            lines += 1;
+            chunk = char;
+          } else {
+            chunk = chunkCandidate;
+          }
+        }
+        current = chunk;
+      }
+    }
+
+    if (current) lines += 1;
+  }
+
+  const safeLines = Math.max(1, lines);
+  return clamp(Math.ceil(safeLines * fontSize * lineHeight + padding * 2 + 4), 24, 5000);
+}
+
 export default function PropsPanel({ scene, onChange }: Props) {
   const selected = useMemo(() => getSelected(scene), [scene]);
 
@@ -1028,6 +1136,10 @@ export default function PropsPanel({ scene, onChange }: Props) {
   const [strokePickerOpen, setStrokePickerOpen] = useState(false);
   const [strokeAnchorRect, setStrokeAnchorRect] = useState<DOMRect | null>(null);
   const strokeButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  const [fontPickerOpen, setFontPickerOpen] = useState(false);
+  const [fontAnchorRect, setFontAnchorRect] = useState<DOMRect | null>(null);
+  const fontButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const [strokeOpen, setStrokeOpen] = useState(false);
   const [cornerOpen, setCornerOpen] = useState(false);
@@ -1044,7 +1156,7 @@ export default function PropsPanel({ scene, onChange }: Props) {
 
   const isNone = selected.kind === "none";
   const isArtboard = selected.kind === "artboard";
-  const item = selected.kind === "none" ? null : selected.item;
+  const item: any = selected.kind === "none" ? null : selected.item;
 
   const isFilledShape =
     !!item &&
@@ -1076,6 +1188,7 @@ export default function PropsPanel({ scene, onChange }: Props) {
   useEffect(() => {
     setFillPickerOpen(false);
     setStrokePickerOpen(false);
+    setFontPickerOpen(false);
     setEffectsPickerOpen(false);
     setActiveEffectEditorId(null);
     setEffectColorPickerId(null);
@@ -2014,7 +2127,13 @@ export default function PropsPanel({ scene, onChange }: Props) {
               <textarea
                 className="propsTextarea"
                 value={item.text ?? ""}
-                onChange={(e) => patchNode(item.id, { text: e.target.value } as any)}
+                onChange={(e) => {
+                  const text = e.target.value;
+                  patchNode(item.id, {
+                    text,
+                    height: estimateTextNodeHeight(item, { text }),
+                  } as any);
+                }}
               />
             </div>
 
@@ -2023,45 +2142,70 @@ export default function PropsPanel({ scene, onChange }: Props) {
                 label="Font size"
                 type="number"
                 value={item.fontSize}
-                onChange={(value) =>
+                onChange={(value) => {
+                  const fontSize = clamp(safeNumber(value, item.fontSize), 8, 300);
                   patchNode(item.id, {
-                    fontSize: clamp(safeNumber(value, item.fontSize), 8, 300),
-                  } as any)
-                }
+                    fontSize,
+                    height: estimateTextNodeHeight(item, { fontSize }),
+                  } as any);
+                }}
               />
 
               <RowInput
                 label="Weight"
                 type="number"
                 value={item.fontWeight ?? 400}
-                onChange={(value) =>
+                onChange={(value) => {
+                  const fontWeight = clamp(
+                    safeNumber(value, item.fontWeight ?? 400),
+                    100,
+                    900
+                  );
                   patchNode(item.id, {
-                    fontWeight: clamp(
-                      safeNumber(value, item.fontWeight ?? 400),
-                      100,
-                      900
-                    ),
-                  } as any)
-                }
+                    fontWeight,
+                    height: estimateTextNodeHeight(item, { fontWeight }),
+                  } as any);
+                }}
               />
             </div>
 
             <div className="propsGrid2">
-              <div className="propsRowInput">
+              <div className="propsRowInput fontPickerField">
                 <div className="propsRowLabel">Font</div>
-                <select
-                  className="propsInput"
-                  value={item.fontFamily}
-                  onChange={(e) => patchNode(item.id, { fontFamily: e.target.value } as any)}
+
+                <button
+                  ref={fontButtonRef}
+                  type="button"
+                  className="fontPickerTrigger"
+                  onClick={() => {
+                    const rect = fontButtonRef.current?.getBoundingClientRect() ?? null;
+                    setFontAnchorRect(rect);
+                    setFontPickerOpen((value) => !value);
+                  }}
                 >
-                  <option value="Inter, Arial, sans-serif">Inter</option>
-                  <option value="Arial, sans-serif">Arial</option>
-                  <option value='"Segoe UI", sans-serif'>Segoe UI</option>
-                  <option value="Roboto, Arial, sans-serif">Roboto</option>
-                  <option value="Georgia, serif">Georgia</option>
-                  <option value='"Times New Roman", serif'>Times New Roman</option>
-                  <option value='"Courier New", monospace'>Courier New</option>
-                </select>
+                  <span
+                    className="fontPickerTriggerName"
+                    style={{ fontFamily: item.fontFamily }}
+                  >
+                    {getFontLabel(item.fontFamily)}
+                  </span>
+                  <span className="fontPickerTriggerChevron">⌄</span>
+                </button>
+
+                {fontPickerOpen && (
+                  <FontPickerPopover
+                    value={item.fontFamily}
+                    anchorRect={fontAnchorRect}
+                    onClose={() => setFontPickerOpen(false)}
+                    onChange={(fontFamily) => {
+                      patchNode(item.id, {
+                        fontFamily,
+                        height: estimateTextNodeHeight(item, { fontFamily }),
+                      } as any);
+                      setFontPickerOpen(false);
+                    }}
+                  />
+                )}
               </div>
 
               <div className="propsRowInput">
@@ -2069,11 +2213,13 @@ export default function PropsPanel({ scene, onChange }: Props) {
                 <select
                   className="propsInput"
                   value={item.fontStyle ?? "normal"}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const fontStyle = e.target.value as "normal" | "italic";
                     patchNode(item.id, {
-                      fontStyle: e.target.value as "normal" | "italic",
-                    } as any)
-                  }
+                      fontStyle,
+                      height: estimateTextNodeHeight(item, { fontStyle }),
+                    } as any);
+                  }}
                 >
                   <option value="normal">normal</option>
                   <option value="italic">italic</option>
@@ -2118,11 +2264,13 @@ export default function PropsPanel({ scene, onChange }: Props) {
                 <select
                   className="propsInput"
                   value={item.wrap ?? "word"}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const wrap = e.target.value as "word" | "char" | "none";
                     patchNode(item.id, {
-                      wrap: e.target.value as "word" | "char" | "none",
-                    } as any)
-                  }
+                      wrap,
+                      height: estimateTextNodeHeight(item, { wrap }),
+                    } as any);
+                  }}
                 >
                   <option value="word">word</option>
                   <option value="char">char</option>
@@ -2136,30 +2284,34 @@ export default function PropsPanel({ scene, onChange }: Props) {
                 label="Line height"
                 type="number"
                 value={item.lineHeight ?? 1.2}
-                onChange={(value) =>
+                onChange={(value) => {
+                  const lineHeight = clamp(
+                    safeNumber(value, item.lineHeight ?? 1.2),
+                    0.5,
+                    4
+                  );
                   patchNode(item.id, {
-                    lineHeight: clamp(
-                      safeNumber(value, item.lineHeight ?? 1.2),
-                      0.5,
-                      4
-                    ),
-                  } as any)
-                }
+                    lineHeight,
+                    height: estimateTextNodeHeight(item, { lineHeight }),
+                  } as any);
+                }}
               />
 
               <RowInput
                 label="Letter spacing"
                 type="number"
                 value={item.letterSpacing ?? 0}
-                onChange={(value) =>
+                onChange={(value) => {
+                  const letterSpacing = clamp(
+                    safeNumber(value, item.letterSpacing ?? 0),
+                    -10,
+                    100
+                  );
                   patchNode(item.id, {
-                    letterSpacing: clamp(
-                      safeNumber(value, item.letterSpacing ?? 0),
-                      -10,
-                      100
-                    ),
-                  } as any)
-                }
+                    letterSpacing,
+                    height: estimateTextNodeHeight(item, { letterSpacing }),
+                  } as any);
+                }}
               />
             </div>
 
@@ -2168,11 +2320,13 @@ export default function PropsPanel({ scene, onChange }: Props) {
                 label="Padding"
                 type="number"
                 value={item.padding ?? 12}
-                onChange={(value) =>
+                onChange={(value) => {
+                  const padding = clamp(safeNumber(value, item.padding ?? 12), 0, 100);
                   patchNode(item.id, {
-                    padding: clamp(safeNumber(value, item.padding ?? 12), 0, 100),
-                  } as any)
-                }
+                    padding,
+                    height: estimateTextNodeHeight(item, { padding }),
+                  } as any);
+                }}
               />
             </div>
           </>

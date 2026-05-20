@@ -67,7 +67,7 @@ body {
 ========================= */
 
 .topbar {
-  height: 80px;
+  height: 68px;
   flex-shrink: 0;
 
   display: flex;
@@ -84,6 +84,8 @@ body {
   font-weight: 650;
   color: var(--text);
   opacity: 0.95;
+  margin-left: 10px;
+  margin-top: 10px;
 }
 
 .topbar .pill {
@@ -243,9 +245,10 @@ button.primary {
 button.exportbutt {
   width: 100px;
   height: 30px;
-  background: linear-gradient(90deg, #C68433 0%, #B835D6 100%);
-  border-radius: 20px;
+  background: white;
+  border-radius: 10px;
   font-weight: 300;
+  color: #111317;
 
 
 }
@@ -1773,4 +1776,3012 @@ input[type="color"]::-webkit-color-swatch {
   grid-template-columns: 16px 12px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
+}
+
+/* =========================
+   LEFT ICON SIDEBAR
+========================= */
+
+.leftSidebarShell {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  background: #2b2b2b;
+}
+
+.leftIconRail {
+  width: 68px;
+  min-width: 68px;
+  height: 100%;
+  padding: 22px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  background: #2b2b2b;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.leftRailButton {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #efefef;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.leftRailButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
+.leftRailButton.active {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.18);
+}
+
+.leftRailIcon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+}
+
+.leftRailIcon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.leftRailTooltip {
+  position: absolute;
+  left: 56px;
+  top: 50%;
+  z-index: 100;
+  transform: translateY(-50%) translateX(-6px);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+
+  padding: 7px 10px;
+  border-radius: 8px;
+
+  background: #171717;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f3f3f3;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+}
+
+.leftRailButton:hover .leftRailTooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.leftSidebarContent {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #2b2b2b;
+}
+
+.leftDrawerContent {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.leftDrawerTitle {
+  margin-bottom: 14px;
+  color: #f1f1f1;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.leftActionButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.leftWideButton {
+  width: 100%;
+  justify-content: center;
+}
+
+.leftDrawerEmptyText {
+  max-width: 190px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   GLASSMORPHISM UI + FLOATING LEFT PANELS
+   Added for the ORIX/TETRIX editor layout
+========================================================= */
+
+:root {
+  --glass-bg: rgba(42, 42, 44, 0.52);
+  --glass-bg-strong: rgba(38, 38, 41, 0.72);
+  --glass-bg-soft: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-soft: rgba(255, 255, 255, 0.075);
+  --glass-shadow: 0 22px 70px rgba(0, 0, 0, 0.42);
+  --glass-shadow-soft: 0 16px 42px rgba(0, 0, 0, 0.28);
+}
+
+/* Subtle background so the glass reads more clearly */
+.appShell {
+  background:
+    radial-gradient(circle at 15% 15%, rgba(64, 135, 255, 0.12), transparent 27%),
+    radial-gradient(circle at 76% 18%, rgba(255, 94, 160, 0.08), transparent 24%),
+    radial-gradient(circle at 50% 82%, rgba(255, 168, 74, 0.06), transparent 28%),
+    var(--bg);
+}
+
+/* The left rail now occupies only a compact column.
+   Floating panels overlay the editor and no longer resize it. */
+.workspaceRow {
+  grid-template-columns: 92px minmax(0, 1fr) 6px var(--rightW, 320px);
+  position: relative;
+}
+
+/* =========================
+   GLASS TOP BAR
+========================= */
+
+.topbar {
+  position: relative;
+  z-index: 45;
+  background: linear-gradient(
+    135deg,
+    rgba(55, 55, 58, 0.62),
+    rgba(34, 34, 37, 0.48)
+  );
+  border-bottom: 1px solid var(--glass-border);
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+}
+
+.topbar .pill {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.topbar .pill.active {
+  background: rgba(43, 97, 255, 0.22);
+  border-color: rgba(84, 130, 255, 0.82);
+  box-shadow:
+    0 0 0 2px rgba(43, 97, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11);
+}
+
+.topbar select,
+.topbar button,
+.topbar input {
+  background: rgba(20, 20, 22, 0.44);
+  border-color: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* =========================
+   GLASS SIDE PANELS
+========================= */
+
+.sidePanel {
+  background: transparent;
+}
+
+.leftPanel {
+  border-right: none;
+}
+
+.rightPanel {
+  margin: 12px 12px 12px 0;
+  border-left: 1px solid var(--glass-border);
+  border-radius: 22px;
+  overflow: hidden;
+  background: linear-gradient(
+    135deg,
+    rgba(53, 53, 57, 0.68),
+    rgba(33, 33, 36, 0.52)
+  );
+  box-shadow:
+    var(--glass-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+}
+
+.rightPanel .panelInner {
+  background: transparent;
+}
+
+/* =========================
+   LEFT GLASS ICON RAIL
+========================= */
+
+.leftPanelFloatingRoot {
+  position: relative;
+  z-index: 70;
+  overflow: visible;
+  min-width: 92px;
+  width: 92px;
+}
+
+.leftIconRail {
+  width: 68px;
+  min-width: 68px;
+  height: calc(100% - 24px);
+  margin: 12px 0 12px 12px;
+  padding: 16px 0;
+  gap: 14px;
+  border-radius: 22px;
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 62, 0.7),
+    rgba(31, 31, 34, 0.52)
+  );
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(24px) saturate(145%);
+  -webkit-backdrop-filter: blur(24px) saturate(145%);
+}
+
+.leftRailButton {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid transparent;
+}
+
+.leftRailButton:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.leftRailButton.active {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 12px 28px rgba(0, 0, 0, 0.24);
+}
+
+.leftRailTooltip {
+  left: 58px;
+  z-index: 140;
+  background: rgba(20, 20, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px) saturate(145%);
+  -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+/* =========================
+   FLOATING LEFT GLASS WINDOW
+========================= */
+
+.leftFloatingPanel {
+  position: absolute;
+  left: 92px;
+  top: 14px;
+  width: 320px;
+  max-height: calc(100vh - 122px);
+  min-height: 150px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 24px;
+  animation: leftGlassPanelIn 180ms ease both;
+}
+
+.glassFloatingPanel {
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 63, 0.74),
+    rgba(27, 27, 31, 0.58)
+  );
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(28px) saturate(155%);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+}
+
+@keyframes leftGlassPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.leftFloatingPanelTop {
+  height: 54px;
+  min-height: 54px;
+  padding: 0 14px 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.leftFloatingPanelCaption {
+  color: #f5f5f5;
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+}
+
+.leftFloatingPanelClose {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.leftFloatingPanelClose:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.leftFloatingPanelBody {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.leftFloatingPanelBody .panelScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.leftFloatingPanelBody .searchRow {
+  margin-top: 0;
+}
+
+.leftDrawerContent {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+.leftActionButtons {
+  gap: 12px;
+}
+
+.leftWideButton {
+  min-height: 40px;
+  border-radius: 14px;
+}
+
+/* =========================
+   GLASS FORM CONTROLS
+========================= */
+
+.searchRow input,
+input,
+select,
+textarea,
+.propsRowInput,
+.propsSizePreview,
+.propsSizePreviewBox,
+.propsColorRow,
+.propsTextarea,
+.cornerCard,
+.opacityCard,
+.cornerMiniField,
+.strokeHeaderCard,
+.strokeControlsCard,
+.strokeWeightBox,
+.effectsHeaderCard,
+.effectItem,
+.effectsTabBtn,
+.effectsAddBtn,
+.fillRgbaInput,
+.fillTextInput,
+.imageUploadBtn,
+.gradientStopBtn,
+.fillModeBtn,
+.shapeMenu,
+.effectsPopover,
+.effectEditorPopover,
+.fillPopover {
+  background-color: rgba(18, 18, 21, 0.48);
+  border-color: rgba(255, 255, 255, 0.09);
+}
+
+.searchRow input,
+input,
+select,
+textarea,
+button,
+.layerItem {
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+button {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.055);
+}
+
+button.primary {
+  background: linear-gradient(135deg, rgba(54, 115, 255, 0.92), rgba(43, 97, 255, 0.72));
+  border-color: rgba(96, 144, 255, 0.75);
+  box-shadow:
+    0 12px 26px rgba(26, 72, 195, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+button.exportbutt {
+  color: #ffffff;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 170, 98, 0.96),
+    rgba(204, 82, 255, 0.92)
+  );
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 14px 28px rgba(184, 72, 206, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+/* =========================
+   GLASS CENTER / SPLITTER
+========================= */
+
+.canvasCard {
+  background:
+    radial-gradient(circle at 28% 18%, rgba(255, 255, 255, 0.022), transparent 32%),
+    rgba(22, 22, 24, 0.78);
+  border-left: 1px solid rgba(255, 255, 255, 0.045);
+  border-right: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.splitter::before {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* =========================
+   GLASS BOTTOM TOOLBAR
+========================= */
+
+.bottomBarWrap {
+  z-index: 90;
+}
+
+.toolbar {
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: linear-gradient(
+    135deg,
+    rgba(57, 57, 62, 0.72),
+    rgba(28, 28, 31, 0.58)
+  );
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.11);
+  backdrop-filter: blur(24px) saturate(155%);
+  -webkit-backdrop-filter: blur(24px) saturate(155%);
+}
+
+.toolBtn {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+}
+
+.toolBtn.active {
+  background: rgba(44, 154, 194, 0.84);
+  border-color: rgba(132, 216, 246, 0.44);
+  box-shadow:
+    0 10px 22px rgba(22, 116, 151, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* =========================
+   GLASS OVERLAYS ALREADY PRESENT IN PROPS
+========================= */
+
+.fillPopover,
+.effectsPopover,
+.effectEditorPopover,
+.shapeMenu {
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(26px) saturate(155%);
+  -webkit-backdrop-filter: blur(26px) saturate(155%);
+}
+
+/* Scrollbar polishing for floating panels and properties */
+.panelScroll::-webkit-scrollbar,
+.leftFloatingPanelBody::-webkit-scrollbar {
+  width: 8px;
+}
+
+.panelScroll::-webkit-scrollbar-thumb,
+.leftFloatingPanelBody::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+.panelScroll::-webkit-scrollbar-track,
+.leftFloatingPanelBody::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* =========================================================
+   CLEAN GLASS SIDEBARS — FINAL OVERRIDES
+   Glass stays, but sidebars are not "cards inside cards".
+   The left buttons are neutral until hover or active.
+========================================================= */
+
+.workspaceRow {
+  grid-template-columns: 68px minmax(0, 1fr) 6px var(--rightW, 320px) !important;
+  position: relative;
+}
+
+/* Left sidebar: one full-height glass strip, no inner card */
+.sidePanel.leftPanel,
+.leftPanel {
+  width: 68px !important;
+  min-width: 68px !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  overflow: visible !important;
+  background: linear-gradient(
+    135deg,
+    rgba(56, 56, 60, 0.56),
+    rgba(30, 30, 33, 0.42)
+  ) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  box-shadow: none !important;
+}
+
+.leftSidebarShell,
+.leftIconRail {
+  width: 68px !important;
+  min-width: 68px !important;
+  height: 100% !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.leftIconRail {
+  padding: 22px 0 !important;
+  gap: 18px !important;
+}
+
+/* Right sidebar: glass plane without contour/card effect */
+.sidePanel.rightPanel,
+.rightPanel {
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  overflow: hidden !important;
+  background: linear-gradient(
+    135deg,
+    rgba(54, 54, 58, 0.56),
+    rgba(31, 31, 35, 0.43)
+  ) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  box-shadow: none !important;
+}
+
+.rightPanel .panelInner,
+.panelInner {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Left rail buttons: transparent by default, highlighted only hover/active */
+.leftRailButton,
+.leftRailButton:focus,
+.leftRailButton:focus-visible {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.leftRailButton:not(.active):not(:hover),
+.leftRailButton:not(.active):not(:hover):focus,
+.leftRailButton:not(.active):not(:hover):focus-visible {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.leftRailButton:hover {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border: none !important;
+  box-shadow: none !important;
+  transform: translateY(-1px) !important;
+}
+
+.leftRailButton.active {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: none !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.leftRailButton.active:hover {
+  background: rgba(255, 255, 255, 0.19) !important;
+}
+
+/* Floating left panel stays glass and overlays canvas without shifting layout */
+.leftFloatingPanel {
+  position: absolute !important;
+  left: 82px !important;
+  top: 14px !important;
+  z-index: 120 !important;
+}
+
+.glassFloatingPanel,
+.leftFloatingPanel {
+  background: linear-gradient(
+    135deg,
+    rgba(58, 58, 63, 0.74),
+    rgba(27, 27, 31, 0.58)
+  );
+  backdrop-filter: blur(28px) saturate(155%);
+  -webkit-backdrop-filter: blur(28px) saturate(155%);
+}
+
+/* Current TSX uses Content layout, not the older Top/Body layout. */
+.leftFloatingPanelContent {
+  height: 100%;
+  min-height: 0;
+  padding: 18px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.leftFloatingPanelContent .panelScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.leftFloatingPanel .leftDrawerTitle {
+  padding-right: 34px;
+}
+
+/* Close button remains clean and glass-compatible */
+.leftFloatingPanelClose {
+  position: absolute !important;
+  top: 10px !important;
+  right: 10px !important;
+  z-index: 2 !important;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.leftFloatingPanelClose:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* =========================================================
+   FIX: keep glass right sidebar without breaking fill/stroke popovers
+   Important: do NOT apply backdrop-filter directly to .rightPanel,
+   because fixed floating color popovers can become trapped/clipped.
+========================================================= */
+
+.sidePanel.rightPanel,
+.rightPanel {
+  position: relative !important;
+  isolation: isolate !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.sidePanel.rightPanel::before,
+.rightPanel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    rgba(54, 54, 58, 0.56),
+    rgba(31, 31, 35, 0.43)
+  );
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+
+.rightPanel .panelInner,
+.rightPanel .panelScroll {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Ensure all picker/popover layers remain above the glass panel */
+.fillPopover,
+.fillPopoverFloating,
+.effectsPopover,
+.effectEditorPopover {
+  z-index: 10000 !important;
+}
+
+/* =========================================================
+   RIGHT PANEL SPLITTER: INTERACTIVE, BUT VISUALLY HIDDEN
+========================================================= */
+.splitter {
+  position: relative;
+  cursor: col-resize;
+  background: transparent !important;
+}
+
+.splitter::before,
+.splitter:hover::before,
+.splitter.dragging::before {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
+}
+
+/* =========================================================
+   ADD ELEMENTS PANEL: SEARCH + CODE-READY PRESETS
+========================================================= */
+.addElementsPanel {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addElementsSearchWrap {
+  position: relative;
+  width: 100%;
+  display: block;
+}
+
+.addElementsSearchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(240, 244, 255, 0.62);
+  font-size: 15px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.addElementsSearchInput {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px 0 38px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(12, 16, 24, 0.56) !important;
+  color: #f4f7ff !important;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+}
+
+.addElementsSearchInput:focus {
+  border-color: rgba(82, 129, 255, 0.55) !important;
+  box-shadow:
+    0 0 0 3px rgba(43, 97, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.addElementsHint {
+  padding: 11px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(232, 238, 255, 0.72);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.addElementsScroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.addElementsScroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.addElementsScroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.addElementsScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.addElementsGroup {
+  margin-bottom: 18px;
+}
+
+.addElementsGroupTitle {
+  margin-bottom: 9px;
+  color: rgba(244, 247, 255, 0.72);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.addElementsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.addElementCard {
+  width: 100%;
+  min-height: 72px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.055) !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+  color: #f6f8ff !important;
+  text-align: left;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(18px);
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.addElementCard:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.075) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  filter: none !important;
+}
+
+.addElementCard:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.addElementCard:disabled,
+.addElementCard.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: none !important;
+}
+
+.addElementCardIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(56, 80, 158, 0.42), rgba(188, 158, 88, 0.22), rgba(158, 56, 56, 0.28));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.addElementCardBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.addElementCardTitle {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.addElementCardDescription {
+  color: rgba(231, 237, 255, 0.68);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.addElementsEmpty {
+  padding: 18px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: rgba(235, 241, 255, 0.72);
+  font-size: 12px;
+  text-align: center;
+}
+
+
+/* =========================================================
+   TEXT FONT PICKER — GLASS LIBRARY
+========================================================= */
+
+.fontPickerField {
+  position: relative;
+}
+
+.fontPickerTrigger {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  box-shadow: none !important;
+}
+
+.fontPickerTrigger:hover {
+  filter: none !important;
+}
+
+.fontPickerTriggerName {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f7f9ff;
+  font-size: 12px;
+  text-align: right;
+}
+
+.fontPickerTriggerChevron {
+  flex-shrink: 0;
+  color: rgba(231, 238, 255, 0.72);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.fontPickerPopover {
+  position: fixed;
+  z-index: 10050;
+  width: 332px;
+  max-height: min(560px, calc(100vh - 32px));
+  padding: 14px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(82, 129, 255, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(59, 59, 65, 0.86), rgba(24, 24, 29, 0.78));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fontPickerHeader {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fontPickerTitle {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 760;
+  letter-spacing: 0.02em;
+}
+
+.fontPickerClose {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+.fontPickerClose:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  filter: none !important;
+}
+
+.fontPickerSearch {
+  position: relative;
+  display: block;
+}
+
+.fontPickerSearchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(232, 238, 255, 0.62);
+  font-size: 18px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.fontPickerSearch input {
+  width: 100%;
+  height: 42px;
+  padding: 0 40px 0 38px !important;
+  border-radius: 14px !important;
+  background: rgba(11, 15, 24, 0.66) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  outline: none;
+}
+
+.fontPickerSearch input:focus {
+  border-color: rgba(82, 129, 255, 0.62) !important;
+  box-shadow:
+    0 0 0 3px rgba(43, 97, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.fontPickerClear {
+  position: absolute !important;
+  right: 7px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: grid !important;
+  place-items: center !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #eef3ff !important;
+  font-size: 18px !important;
+  line-height: 1 !important;
+}
+
+.fontPickerCategory {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px !important;
+  border-radius: 14px !important;
+  background: rgba(11, 15, 24, 0.62) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f7f9ff !important;
+  font-size: 12px !important;
+  outline: none;
+}
+
+.fontPickerList {
+  min-height: 0;
+  max-height: 390px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 4px;
+}
+
+.fontPickerList::-webkit-scrollbar {
+  width: 7px;
+}
+
+.fontPickerList::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+}
+
+.fontPickerList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fontPickerOption {
+  width: 100%;
+  min-height: 50px;
+  border: none !important;
+  border-radius: 13px !important;
+  background: transparent !important;
+  padding: 9px 10px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.fontPickerOption:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  filter: none !important;
+}
+
+.fontPickerOption.active {
+  background: linear-gradient(
+    135deg,
+    rgba(43, 97, 255, 0.36),
+    rgba(255, 255, 255, 0.08)
+  ) !important;
+  box-shadow: inset 0 0 0 1px rgba(108, 151, 255, 0.32) !important;
+}
+
+.fontPickerOptionName {
+  color: #ffffff;
+  font-size: 20px;
+  line-height: 1.08;
+}
+
+.fontPickerOptionMeta {
+  color: rgba(224, 232, 255, 0.58);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.fontPickerEmpty {
+  min-height: 84px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  color: rgba(231, 238, 255, 0.7);
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* =========================================================
+   ORIX PUBLIC SITE + AUTH + PROJECT LIBRARY
+   Landing, account flow and project dashboard
+========================================================= */
+
+.marketingShell,
+.authShell,
+.projectsShell {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: #f7f8ff;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(56, 80, 158, 0.38), transparent 28rem),
+    radial-gradient(circle at 82% 16%, rgba(158, 56, 56, 0.24), transparent 24rem),
+    radial-gradient(circle at 48% 62%, rgba(188, 158, 88, 0.16), transparent 32rem),
+    linear-gradient(180deg, #090a13 0%, #0b0d18 42%, #070812 100%);
+}
+
+.marketingShell::before,
+.authShell::before,
+.projectsShell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.34;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.18) 0.72px, transparent 0.72px),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 7px 7px, 64px 64px, 64px 64px;
+  mask-image: linear-gradient(to bottom, black 0%, rgba(0, 0, 0, 0.8) 48%, transparent 100%);
+}
+
+.marketingHeader,
+.marketingMain,
+.marketingFooter,
+.authShell > *,
+.projectsShell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.glassMarketingBar {
+  background: linear-gradient(
+    135deg,
+    rgba(39, 42, 58, 0.76),
+    rgba(18, 20, 31, 0.58)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+}
+
+.glassShowcase,
+.glassSoftPanel,
+.glassAuthCard {
+  background: linear-gradient(
+    135deg,
+    rgba(41, 43, 60, 0.72),
+    rgba(16, 18, 28, 0.56)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  box-shadow:
+    0 26px 90px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(30px) saturate(155%);
+  -webkit-backdrop-filter: blur(30px) saturate(155%);
+}
+
+.brandResetButton {
+  width: auto !important;
+  min-width: 0;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.brandLogoLockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  color: #ffffff;
+}
+
+.brandLogoLockup.compact {
+  gap: 11px;
+}
+
+.brandLogoMark {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background:
+    conic-gradient(
+      from 208deg,
+      #ef4247 0deg,
+      #bc9e58 72deg,
+      #bcd673 128deg,
+      #69c8ef 215deg,
+      #38509e 305deg,
+      #ef4247 360deg
+    );
+  mask:
+    radial-gradient(circle at center, transparent 0 46%, #000 47% 100%);
+  -webkit-mask:
+    radial-gradient(circle at center, transparent 0 46%, #000 47% 100%);
+  filter: drop-shadow(0 10px 18px rgba(70, 106, 255, 0.22));
+}
+
+.brandLogoMark::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  top: 20px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #090a13;
+}
+
+.brandLogoMark span {
+  display: none;
+}
+
+.brandLogoLockup.compact .brandLogoMark {
+  width: 34px;
+  height: 34px;
+}
+
+.brandLogoLockup.compact .brandLogoMark::after {
+  right: 0;
+  top: 16px;
+  width: 14px;
+  height: 14px;
+}
+
+.brandLogoTextWrap {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.brandLogoName {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  background: linear-gradient(90deg, #ffffff, #d9e0ff 45%, #f2d693);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.brandLogoSub {
+  font-size: 10px;
+  color: rgba(235, 240, 255, 0.62);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.brandLogoLockup.compact .brandLogoName {
+  font-size: 15px;
+}
+
+.marketingHeader {
+  position: sticky;
+  top: 18px;
+  z-index: 20;
+  width: min(1180px, calc(100% - 48px));
+  min-height: 72px;
+  margin: 18px auto 0;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-radius: 24px;
+}
+
+.marketingNav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+}
+
+.marketingNav a {
+  color: rgba(241, 244, 255, 0.78);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.marketingNav a:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.marketingHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.marketingGhostBtn,
+.marketingPrimaryBtn {
+  width: auto;
+  min-height: 42px;
+  border-radius: 14px !important;
+  padding: 0 18px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.marketingGhostBtn {
+  color: #f5f7ff !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+.marketingGhostBtn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  filter: none !important;
+}
+
+.marketingPrimaryBtn {
+  color: #ffffff !important;
+  background:
+    linear-gradient(135deg, rgba(56, 80, 158, 0.95), rgba(107, 82, 240, 0.92) 42%, rgba(188, 158, 88, 0.92)) !important;
+  border: 1px solid rgba(194, 210, 255, 0.18) !important;
+  box-shadow:
+    0 16px 36px rgba(49, 71, 170, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+}
+
+.marketingPrimaryBtn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 22px 44px rgba(49, 71, 170, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+  filter: none !important;
+}
+
+.marketingPrimaryBtn.large,
+.marketingGhostBtn.large {
+  min-height: 52px;
+  padding: 0 24px !important;
+  font-size: 14px !important;
+  border-radius: 16px !important;
+}
+
+.marketingMain {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 94px 0 92px;
+}
+
+.marketingHero {
+  max-width: 900px;
+  margin: 0 auto 46px;
+  text-align: center;
+}
+
+.marketingEyebrow,
+.sectionBadge {
+  width: max-content;
+  max-width: 100%;
+  margin: 0 auto 18px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  color: #f6f7ff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.marketingHero h1 {
+  max-width: 930px;
+  margin: 0 auto 20px;
+  color: #ffffff;
+  font-size: clamp(48px, 7vw, 92px);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+  font-weight: 900;
+  text-wrap: balance;
+}
+
+.marketingHero p,
+.sectionLead {
+  max-width: 760px;
+  margin: 0 auto;
+  color: rgba(228, 234, 255, 0.74);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.marketingHeroActions {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.heroMetricStrip {
+  width: max-content;
+  max-width: 100%;
+  margin: 34px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.heroMetricStrip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: rgba(241, 244, 255, 0.76);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px;
+}
+
+.heroMetricStrip strong {
+  color: #ffffff;
+}
+
+.editorShowcase {
+  position: relative;
+  width: min(100%, 1050px);
+  min-height: 610px;
+  margin: 0 auto 140px;
+  padding: 18px;
+  overflow: hidden;
+  border-radius: 36px;
+}
+
+.editorShowcaseGlow {
+  position: absolute;
+  inset: -12% 14% auto 14%;
+  height: 220px;
+  background: radial-gradient(circle, rgba(117, 92, 255, 0.62), transparent 72%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+.mockEditorTop {
+  position: relative;
+  z-index: 1;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-radius: 22px;
+  background: rgba(10, 12, 23, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.mockDots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mockDots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: block;
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.mockDots i:nth-child(1) {
+  background: #ef4247;
+}
+
+.mockDots i:nth-child(2) {
+  background: #bc9e58;
+}
+
+.mockDots i:nth-child(3) {
+  background: #69c8ef;
+}
+
+.mockEditorTop span {
+  flex: 1;
+  color: rgba(240, 244, 255, 0.75);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.mockEditorTop button {
+  width: auto;
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.mockEditorBody {
+  position: relative;
+  z-index: 1;
+  height: 500px;
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 230px;
+  gap: 16px;
+}
+
+.mockRail,
+.mockProperties,
+.mockCanvas {
+  min-height: 0;
+  border-radius: 24px;
+  background: rgba(10, 12, 23, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.mockRail {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 0;
+}
+
+.mockRail i {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-style: normal;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.mockCanvas {
+  display: grid;
+  place-items: center;
+  padding: 26px;
+}
+
+.mockArtboard {
+  width: min(100%, 540px);
+  height: 370px;
+  padding: 34px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(110, 101, 255, 0.26), transparent 34%),
+    rgba(238, 241, 255, 0.95);
+  box-shadow: 0 26px 72px rgba(0, 0, 0, 0.35);
+}
+
+.mockHeroTitle {
+  width: 68%;
+  height: 28px;
+  border-radius: 999px;
+  background: #252a43;
+}
+
+.mockHeroLine {
+  width: 84%;
+  height: 14px;
+  margin-top: 16px;
+  border-radius: 999px;
+  background: rgba(53, 61, 96, 0.26);
+}
+
+.mockHeroLine.short {
+  width: 56%;
+  margin-top: 22px;
+}
+
+.mockHeroButtons {
+  display: flex;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.mockHeroButtons span {
+  width: 126px;
+  height: 44px;
+  border-radius: 14px;
+  display: block;
+  background: linear-gradient(135deg, #38509e, #7b66ef, #bc9e58);
+}
+
+.mockHeroButtons span:last-child {
+  width: 104px;
+  background: rgba(53, 61, 96, 0.20);
+}
+
+.mockCards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 42px;
+}
+
+.mockCards b {
+  height: 96px;
+  border-radius: 18px;
+  background: rgba(45, 51, 82, 0.12);
+  border: 1px solid rgba(45, 51, 82, 0.08);
+}
+
+.mockProperties {
+  padding: 20px;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.mockProperties strong {
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.mockProperties span,
+.mockProperties div {
+  display: block;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mockProperties div {
+  height: 112px;
+}
+
+.marketingSection {
+  margin-bottom: 130px;
+  text-align: center;
+}
+
+.marketingSection h2,
+.marketingSplitSection h2,
+.marketingFinalCta h2,
+.authPreview h2,
+.projectsHero h1 {
+  margin: 0 0 16px;
+  color: #ffffff;
+  font-size: clamp(34px, 4vw, 58px);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  font-weight: 850;
+}
+
+.marketingFeatureGrid {
+  margin-top: 46px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.marketingFeatureCard,
+.pricingMoodCard {
+  min-height: 240px;
+  padding: 24px;
+  border-radius: 28px;
+  text-align: left;
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(45, 49, 69, 0.72), rgba(11, 13, 24, 0.62));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 22px 52px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.marketingFeatureCard:hover,
+.pricingMoodCard:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.featureIcon {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 22px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 21px;
+  font-weight: 800;
+  background:
+    linear-gradient(135deg, rgba(56, 80, 158, 0.84), rgba(158, 56, 56, 0.56), rgba(188, 158, 88, 0.84));
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.marketingFeatureCard h3,
+.pricingMoodCard h3 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.marketingFeatureCard p,
+.pricingMoodCard p,
+.marketingSplitSection p,
+.marketingFinalCta p,
+.authPreview p,
+.projectsHero p {
+  margin: 0;
+  color: rgba(228, 234, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.marketingSplitSection {
+  margin-bottom: 130px;
+  display: grid;
+  grid-template-columns: 1.02fr 0.98fr;
+  align-items: center;
+  gap: 34px;
+}
+
+.workflowCopy .sectionBadge {
+  margin-left: 0;
+}
+
+.workflowCopy h2 {
+  text-align: left;
+}
+
+.workflowCopy p {
+  max-width: 620px;
+}
+
+.workflowSteps {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.workflowSteps div {
+  min-height: 72px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.workflowSteps strong {
+  width: 38px;
+  color: #f2d693;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.workflowSteps span {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.workflowBoard {
+  min-height: 480px;
+  padding: 24px;
+  border-radius: 32px;
+}
+
+.workflowBoardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.workflowBoardHeader span {
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.workflowBoardHeader button {
+  width: auto;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.miniProjectCards {
+  display: grid;
+  gap: 15px;
+}
+
+.miniProjectCards article {
+  min-height: 112px;
+  padding: 20px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(120, 100, 255, 0.24), transparent 34%),
+    rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.miniProjectCards h4 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.miniProjectCards p {
+  color: rgba(228, 234, 255, 0.66);
+}
+
+.marketingPricingMood {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 130px;
+}
+
+.pricingMoodCard {
+  min-height: 220px;
+}
+
+.pricingMoodCard.featured {
+  background:
+    radial-gradient(circle at 72% 12%, rgba(242, 214, 147, 0.30), transparent 36%),
+    linear-gradient(135deg, rgba(56, 80, 158, 0.82), rgba(37, 30, 78, 0.74));
+  transform: translateY(-12px);
+}
+
+.marketingFinalCta {
+  position: relative;
+  min-height: 430px;
+  margin-bottom: 72px;
+  padding: 54px 28px;
+  border-radius: 38px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.marketingFinalCta h2 {
+  max-width: 760px;
+  margin: 0;
+}
+
+.ctaOrb {
+  position: absolute;
+  left: 50%;
+  bottom: -250px;
+  width: min(920px, 94vw);
+  height: 480px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border: 2px solid rgba(222, 196, 255, 0.26);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(188, 158, 88, 0.52), rgba(96, 77, 238, 0.46) 24%, transparent 64%);
+  filter: blur(0.2px);
+  pointer-events: none;
+}
+
+.marketingFooter {
+  width: min(1180px, calc(100% - 48px));
+  min-height: 138px;
+  margin: 0 auto 32px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.marketingFooter p {
+  margin: 0;
+  color: rgba(228, 234, 255, 0.68);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.footerLinks {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.footerLinks button {
+  width: auto;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* =========================
+   AUTH PAGE
+========================= */
+
+.authShell {
+  display: grid;
+  grid-template-columns: minmax(340px, 560px) minmax(320px, 500px);
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  padding: 72px 28px;
+}
+
+.authBackLink {
+  position: fixed !important;
+  left: 28px;
+  top: 28px;
+  z-index: 10 !important;
+  width: auto !important;
+  min-height: 42px;
+  padding: 0 16px !important;
+  border-radius: 14px !important;
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+.authGlow {
+  position: fixed !important;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(30px);
+}
+
+.authGlowA {
+  left: 8%;
+  top: 8%;
+  width: 420px;
+  height: 420px;
+  background: rgba(56, 80, 158, 0.28);
+}
+
+.authGlowB {
+  right: 10%;
+  bottom: 8%;
+  width: 460px;
+  height: 460px;
+  background: rgba(158, 56, 56, 0.22);
+}
+
+.authCard {
+  min-height: 690px;
+  padding: 38px;
+  border-radius: 38px;
+}
+
+.authTabs {
+  width: 100%;
+  margin: 30px 0 28px;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.authTabs button {
+  min-height: 46px;
+  border: none !important;
+  border-radius: 13px !important;
+  color: rgba(240, 244, 255, 0.72);
+  background: transparent !important;
+  font-weight: 750;
+}
+
+.authTabs button.active {
+  color: #ffffff;
+  background:
+    linear-gradient(135deg, rgba(56, 80, 158, 0.85), rgba(112, 82, 240, 0.72)) !important;
+  box-shadow:
+    0 14px 30px rgba(28, 42, 112, 0.30),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.authCard h1 {
+  margin: 0 0 14px;
+  color: #ffffff;
+  font-size: clamp(32px, 4vw, 48px);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  font-weight: 850;
+}
+
+.authCard > p {
+  margin: 0 0 28px;
+  color: rgba(228, 234, 255, 0.72);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.authForm {
+  display: grid;
+  gap: 16px;
+}
+
+.authForm label,
+.projectDialog label {
+  display: grid;
+  gap: 9px;
+  color: rgba(241, 244, 255, 0.88);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.03em;
+}
+
+.authForm input,
+.projectDialog input,
+.projectDialog textarea,
+.projectsSearch input {
+  min-height: 52px;
+  padding: 0 16px !important;
+  border-radius: 16px !important;
+  color: #ffffff !important;
+  background: rgba(11, 13, 24, 0.58) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  outline: none;
+  font-size: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.authForm input:focus,
+.projectDialog input:focus,
+.projectDialog textarea:focus,
+.projectsSearch input:focus {
+  border-color: rgba(129, 151, 255, 0.56) !important;
+  box-shadow:
+    0 0 0 4px rgba(56, 80, 158, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.authSubmit {
+  width: 100% !important;
+  min-height: 54px !important;
+  margin-top: 6px;
+}
+
+.authError {
+  min-height: 42px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: #ffd8dc;
+  background: rgba(158, 56, 56, 0.24);
+  border: 1px solid rgba(255, 128, 140, 0.18);
+  font-size: 13px;
+}
+
+.authNote {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 16px;
+  color: rgba(228, 234, 255, 0.66);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.authPreview {
+  min-height: 560px;
+  padding: 34px;
+  border-radius: 38px;
+  display: grid;
+  align-content: center;
+}
+
+.authPreview .sectionBadge {
+  margin-left: 0;
+}
+
+.authPreviewCards {
+  margin-top: 28px;
+  display: grid;
+  gap: 14px;
+}
+
+.authPreviewCards article {
+  min-height: 92px;
+  padding: 18px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 90% 0%, rgba(188, 158, 88, 0.18), transparent 36%),
+    rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.authPreviewCards strong {
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.authPreviewCards span {
+  color: rgba(228, 234, 255, 0.64);
+  font-size: 12px;
+}
+
+/* =========================
+   PROJECTS DASHBOARD
+========================= */
+
+.projectsShell {
+  padding-bottom: 72px;
+}
+
+.projectsTopbar {
+  position: sticky;
+  top: 18px;
+  z-index: 20;
+  width: min(1240px, calc(100% - 48px));
+  min-height: 82px;
+  margin: 18px auto 0;
+  padding: 0 18px;
+  display: grid;
+  grid-template-columns: auto minmax(280px, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  border-radius: 26px;
+}
+
+.projectsSearch {
+  min-width: 0;
+  height: 52px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.projectsSearch span {
+  display: grid;
+  place-items: center;
+  color: rgba(238, 243, 255, 0.66);
+  font-size: 20px;
+}
+
+.projectsSearch input {
+  height: 50px;
+  min-height: 50px;
+  padding-left: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.projectsUserChip {
+  min-width: 196px;
+  min-height: 52px;
+  padding: 0 16px;
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.projectsUserChip strong {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.projectsUserChip span {
+  color: rgba(228, 234, 255, 0.62);
+  font-size: 11px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.projectsMain {
+  position: relative;
+  z-index: 1;
+  width: min(1240px, calc(100% - 48px));
+  margin: 0 auto;
+  padding-top: 58px;
+}
+
+.projectsHero {
+  min-height: 312px;
+  padding: 42px;
+  border-radius: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 36px;
+}
+
+.projectsHero > div {
+  max-width: 760px;
+}
+
+.projectsHero .sectionBadge {
+  margin-left: 0;
+}
+
+.projectsHero h1 {
+  margin-bottom: 18px;
+}
+
+.projectsStats {
+  margin: 22px 0 28px;
+  display: grid;
+  grid-template-columns: 0.8fr 0.8fr 1.2fr;
+  gap: 16px;
+}
+
+.projectsStats article {
+  min-height: 126px;
+  padding: 22px;
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.075);
+}
+
+.projectsStats strong {
+  color: #ffffff;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.projectsStats span {
+  color: rgba(228, 234, 255, 0.66);
+  font-size: 13px;
+}
+
+.projectGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.projectCard {
+  min-height: 440px;
+  overflow: hidden;
+  border-radius: 34px;
+  background:
+    linear-gradient(135deg, rgba(43, 46, 64, 0.74), rgba(11, 13, 24, 0.62));
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  box-shadow:
+    0 22px 62px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.projectPreview {
+  position: relative;
+  height: 184px;
+  padding: 24px;
+  display: grid;
+  align-content: end;
+  gap: 10px;
+  background:
+    linear-gradient(135deg, rgba(56, 80, 158, 0.54), rgba(158, 56, 56, 0.22), rgba(188, 158, 88, 0.18));
+  overflow: hidden;
+}
+
+.projectPreviewGlow {
+  position: absolute;
+  right: -56px;
+  top: -74px;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 220, 160, 0.42), transparent 70%);
+}
+
+.projectPreview span {
+  position: relative;
+  display: block;
+  height: 15px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.projectPreview span:nth-of-type(2) {
+  width: 72%;
+}
+
+.projectPreview span:nth-of-type(3) {
+  width: 48%;
+}
+
+.projectCardBody {
+  min-height: 256px;
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.projectCardHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.projectCardHeading h2 {
+  min-width: 0;
+  margin: 0;
+  color: #ffffff;
+  font-size: 26px;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  font-weight: 850;
+}
+
+.projectCardHeading button {
+  width: auto;
+  min-height: 34px;
+  padding: 0 13px;
+  border-radius: 12px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.projectCardBody > p {
+  min-height: 46px;
+  margin: 0;
+  color: rgba(228, 234, 255, 0.69);
+  font-size: 14px;
+  line-height: 1.62;
+}
+
+.projectMeta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.projectMeta span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: rgba(238, 243, 255, 0.68);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  font-size: 11px;
+}
+
+.projectActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.projectDangerBtn {
+  width: auto;
+  min-height: 42px;
+  padding: 0 18px !important;
+  border-radius: 14px !important;
+  color: #ffd8dc !important;
+  background: rgba(158, 56, 56, 0.20) !important;
+  border: 1px solid rgba(255, 128, 140, 0.16) !important;
+}
+
+.emptyProjectsCard {
+  grid-column: 1 / -1;
+  min-height: 340px;
+  padding: 42px;
+  border-radius: 34px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.emptyProjectsCard h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 34px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.emptyProjectsCard p {
+  max-width: 520px;
+  margin: 0;
+  color: rgba(228, 234, 255, 0.68);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.projectDialogBackdrop {
+  position: fixed !important;
+  inset: 0;
+  z-index: 1000 !important;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgba(3, 5, 12, 0.68);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.projectDialog {
+  width: min(540px, 100%);
+  min-height: 420px;
+  padding: 34px;
+  border-radius: 34px;
+}
+
+.projectDialog h2 {
+  margin: 0 0 10px;
+  color: #ffffff;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-weight: 850;
+}
+
+.projectDialog > p {
+  margin: 0 0 24px;
+  color: rgba(228, 234, 255, 0.68);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.projectDialog form {
+  display: grid;
+  gap: 18px;
+}
+
+.projectDialog textarea {
+  min-height: 124px;
+  padding: 16px !important;
+  resize: vertical;
+}
+
+.projectDialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.projectDialogActions button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* =========================
+   EDITOR PROJECT DOCK
+========================= */
+
+.editorProjectDock {
+  position: absolute !important;
+  top: 84px;
+  left: 86px;
+  z-index: 88 !important;
+  width: auto !important;
+  min-height: 44px;
+  padding: 0 15px !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 12px;
+  border-radius: 999px !important;
+  color: #ffffff !important;
+  background: rgba(25, 28, 40, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+}
+
+.editorProjectDock span {
+  color: rgba(240, 244, 255, 0.74);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.editorProjectDock strong {
+  max-width: 260px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* =========================
+   RESPONSIVE PRODUCT PAGES
+========================= */
+
+@media (max-width: 1080px) {
+  .marketingHeader,
+  .projectsTopbar {
+    width: calc(100% - 28px);
+  }
+
+  .marketingNav {
+    display: none;
+  }
+
+  .marketingMain,
+  .marketingFooter,
+  .projectsMain {
+    width: calc(100% - 28px);
+  }
+
+  .mockEditorBody {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+
+  .mockProperties {
+    display: none;
+  }
+
+  .marketingFeatureGrid,
+  .marketingPricingMood {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .marketingSplitSection,
+  .authShell {
+    grid-template-columns: 1fr;
+  }
+
+  .authShell {
+    align-content: start;
+    padding-top: 104px;
+  }
+
+  .authCard,
+  .authPreview {
+    width: min(680px, 100%);
+    justify-self: center;
+  }
+
+  .projectsTopbar {
+    grid-template-columns: auto minmax(220px, 1fr) auto;
+  }
+
+  .projectsUserChip {
+    display: none;
+  }
+
+  .projectsHero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .projectGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .marketingShell,
+  .authShell,
+  .projectsShell {
+    overflow-y: auto;
+  }
+
+  .marketingHeader {
+    top: 12px;
+    min-height: 68px;
+    padding: 0 12px;
+    gap: 10px;
+    border-radius: 20px;
+  }
+
+  .marketingHeaderActions {
+    gap: 8px;
+  }
+
+  .marketingGhostBtn,
+  .marketingPrimaryBtn {
+    min-height: 40px;
+    padding: 0 13px !important;
+    font-size: 12px !important;
+  }
+
+  .marketingHeader .marketingGhostBtn {
+    display: none;
+  }
+
+  .marketingMain {
+    padding-top: 72px;
+  }
+
+  .marketingHero h1 {
+    font-size: clamp(40px, 12vw, 58px);
+  }
+
+  .marketingHero p,
+  .sectionLead {
+    font-size: 14px;
+  }
+
+  .editorShowcase {
+    min-height: 488px;
+    padding: 12px;
+    border-radius: 28px;
+  }
+
+  .mockEditorTop {
+    min-height: 52px;
+  }
+
+  .mockEditorBody {
+    height: 396px;
+    grid-template-columns: 54px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .mockRail i {
+    width: 34px;
+    height: 34px;
+  }
+
+  .mockCanvas {
+    padding: 12px;
+  }
+
+  .mockArtboard {
+    height: 300px;
+    padding: 20px;
+  }
+
+  .mockCards {
+    grid-template-columns: 1fr;
+  }
+
+  .mockCards b:nth-child(2),
+  .mockCards b:nth-child(3) {
+    display: none;
+  }
+
+  .marketingFeatureGrid,
+  .marketingPricingMood,
+  .workflowSteps,
+  .projectsStats {
+    grid-template-columns: 1fr;
+  }
+
+  .marketingSplitSection {
+    gap: 24px;
+  }
+
+  .workflowBoard {
+    min-height: 420px;
+  }
+
+  .marketingFinalCta {
+    min-height: 380px;
+  }
+
+  .marketingFooter {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .authShell {
+    padding: 88px 14px 28px;
+  }
+
+  .authBackLink {
+    left: 14px;
+    top: 14px;
+  }
+
+  .authCard,
+  .authPreview,
+  .projectDialog {
+    padding: 24px;
+    border-radius: 28px;
+  }
+
+  .authCard {
+    min-height: 0;
+  }
+
+  .authPreview {
+    min-height: 420px;
+  }
+
+  .projectsTopbar {
+    width: calc(100% - 20px);
+    min-height: 148px;
+    padding: 12px;
+    grid-template-columns: 1fr auto;
+  }
+
+  .projectsTopbar .brandResetButton {
+    grid-column: 1 / 2;
+  }
+
+  .projectsSearch {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .projectsMain {
+    width: calc(100% - 20px);
+    padding-top: 30px;
+  }
+
+  .projectsHero {
+    min-height: 0;
+    padding: 28px;
+    border-radius: 30px;
+  }
+
+  .projectCard {
+    min-height: 0;
+    border-radius: 28px;
+  }
+
+  .projectCardHeading {
+    flex-direction: column;
+  }
+
+  .projectActions,
+  .projectDialogActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .projectActions button,
+  .projectDialogActions button {
+    width: 100%;
+  }
+
+  .editorProjectDock {
+    top: 78px;
+    left: 76px;
+    max-width: calc(100vw - 88px);
+  }
+}
+
+/* =========================
+   FIX: IMAGE BRAND LOGO SIZE
+========================= */
+
+.brandLogo,
+.brandLogoLockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.brandLogoImage,
+.brandLogo img,
+.brandLogoLockup img {
+  display: block;
+  width: 52px !important;
+  height: 52px !important;
+  min-width: 52px !important;
+  min-height: 52px !important;
+  max-width: 52px !important;
+  max-height: 52px !important;
+  object-fit: contain !important;
+  flex-shrink: 0;
+}
+
+/* Компактне лого у верхній навігації та на сторінці проєктів */
+.brandLogo.compact .brandLogoImage,
+.brandLogoLockup.compact img,
+.marketingHeader .brandLogoImage,
+.projectsTopbar .brandLogoImage {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  max-width: 36px !important;
+  max-height: 36px !important;
+}
+
+/* Щоб текст назви не роз’їжджався */
+.brandLogoText,
+.brandLogoName {
+  white-space: nowrap;
 }

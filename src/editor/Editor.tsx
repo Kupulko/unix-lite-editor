@@ -56,6 +56,15 @@ type ResizePreview = {
   width: number;
   height: number;
 };
+
+type TextResizeDraft = {
+  nodeId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+};
 const ALIGN_GUIDE_COLOR = "#ff4d3d";
 const ALIGN_GUIDE_PIXEL_THRESHOLD = 6;
 
@@ -942,6 +951,7 @@ export default function Editor({
   const trRef = useRef<Konva.Transformer | null>(null);
 
   const nodeRefs = useRef<Record<string, Konva.Node | null>>({});
+  const textResizeDraftRef = useRef<TextResizeDraft | null>(null);
   const artboardRectRefs = useRef<Record<string, Konva.Rect | null>>({});
   const artboardGroupRefs = useRef<Record<string, Konva.Group | null>>({});
 
@@ -1365,13 +1375,14 @@ const localY = node.y - parentWorldY;
             y={0}
             width={node.width}
             height={node.height}
-            fill={node.backgroundColor || "#ffffff"}
+            fill={node.backgroundColor || "rgba(255,255,255,0)"}
             cornerRadius={8}
             {...dropShadowProps}
             {...commonEvents}
           />
 
           <Text
+            name="text-content"
             x={0}
             y={0}
             width={node.width}
@@ -1758,6 +1769,17 @@ onDragEnd={(e: Konva.KonvaEventObject<DragEvent>) => {
 
   const target = e.target as Konva.Group;
 
+  if (node.type === "text") {
+    textResizeDraftRef.current = {
+      nodeId: node.id,
+      x: parentWorldX + target.x(),
+      y: parentWorldY + target.y(),
+      width: node.width,
+      height: node.height,
+      rotation: target.rotation(),
+    };
+  }
+
   setResizePreview({
     x: parentWorldX + target.x(),
     y: parentWorldY + target.y(),
@@ -1771,11 +1793,32 @@ onTransform={(e: Konva.KonvaEventObject<Event>) => {
   const scaleY = target.scaleY();
 
   const isTextNode = node.type === "text";
-
   const previewW = clamp(node.width * scaleX, 10, 5000);
   const previewH = isTextNode
     ? clamp(node.height * scaleY, 24, 5000)
     : clamp(node.height * scaleY, 10, 5000);
+
+  if (isTextNode) {
+    const textShape = target.findOne(".text-content") as Konva.Text | undefined;
+
+    if (textShape) {
+      textShape.scaleX(scaleX === 0 ? 1 : 1 / scaleX);
+      textShape.scaleY(scaleY === 0 ? 1 : 1 / scaleY);
+      textShape.width(previewW);
+      textShape.height(previewH);
+    }
+
+    textResizeDraftRef.current = {
+      nodeId: node.id,
+      x: parentWorldX + target.x(),
+      y: parentWorldY + target.y(),
+      width: previewW,
+      height: previewH,
+      rotation: target.rotation(),
+    };
+
+    target.getLayer()?.batchDraw();
+  }
 
   setResizePreview({
     x: parentWorldX + target.x(),
@@ -1788,16 +1831,35 @@ onTransformEnd={(e: Konva.KonvaEventObject<Event>) => {
   const target = e.target as Konva.Group;
   const scaleX = target.scaleX();
   const scaleY = target.scaleY();
+  const isTextNode = node.type === "text";
+
+  const draft =
+    isTextNode && textResizeDraftRef.current?.nodeId === node.id
+      ? textResizeDraftRef.current
+      : null;
+
+  const newW = draft?.width ?? clamp(node.width * scaleX, 10, 5000);
+  const newH =
+    draft?.height ??
+    (isTextNode
+      ? clamp(node.height * scaleY, 24, 5000)
+      : clamp(node.height * scaleY, 10, 5000));
 
   target.scaleX(1);
   target.scaleY(1);
 
-  const isTextNode = node.type === "text";
+  if (isTextNode) {
+    const textShape = target.findOne(".text-content") as Konva.Text | undefined;
 
-  const newW = clamp(node.width * scaleX, 10, 5000);
-  const newH = isTextNode
-    ? clamp(node.height * scaleY, 24, 5000)
-    : clamp(node.height * scaleY, 10, 5000);
+    if (textShape) {
+      textShape.scaleX(1);
+      textShape.scaleY(1);
+      textShape.width(newW);
+      textShape.height(newH);
+    }
+
+    textResizeDraftRef.current = null;
+  }
 
   onChange({
     ...scene,
@@ -1805,11 +1867,11 @@ onTransformEnd={(e: Konva.KonvaEventObject<Event>) => {
       n.id === node.id
         ? ({
             ...n,
-            x: parentWorldX + target.x(),
-            y: parentWorldY + target.y(),
+            x: draft?.x ?? parentWorldX + target.x(),
+            y: draft?.y ?? parentWorldY + target.y(),
             width: newW,
             height: newH,
-            rotation: target.rotation(),
+            rotation: draft?.rotation ?? target.rotation(),
           } as SceneNode)
         : n
     ),

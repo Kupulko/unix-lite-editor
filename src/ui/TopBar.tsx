@@ -11,14 +11,9 @@ type Props = {
 export default function TopBar({ mode, onMode, zoomPct, onZoomPct, onExport }: Props) {
   return (
     <div className="topbar">
-      <div className="title">Untitled</div>
+      <div className="title">          <img src="/images/logoT.png" alt="Text" style={{ width: 40, height: "auto" }} />
+</div>
 
-      <button className={"pill " + (mode === "Design" ? "active" : "")} onClick={() => onMode("Design")}>
-        Design
-      </button>
-      <button className={"pill " + (mode === "Prototype" ? "active" : "")} onClick={() => onMode("Prototype")}>
-        Prototype
-      </button>
 
       <div className="spacer" />
 
